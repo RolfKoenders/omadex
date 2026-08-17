@@ -5,7 +5,7 @@ import "PokemonDetail.js" as PokemonDetail
 import "PokeApi.js" as PokeApi
 
 // One search-result row plus its inline expansion. Shaped after hass's
-// EntityRow.qml, but simpler — omadex has exactly one expansion kind, so
+// EntityRow.qml, but simpler — Quickdex has exactly one expansion kind, so
 // there's no domain-switch the way EntityRow picks among several controls.
 CursorSurface {
   id: row

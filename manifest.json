@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "omadex",
-  "name": "Omadex",
+  "id": "io.github.rolfkoenders.quickdex",
+  "name": "Quickdex",
   "version": "0.1.0",
   "author": "Rolf Koenders",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "barWidget": "Panel.qml"
   },
   "barWidget": {
-    "displayName": "Omadex",
+    "displayName": "Quickdex",
     "description": "Search Pokémon stats, types, and weaknesses.",
     "category": "Utility",
     "allowMultiple": false,

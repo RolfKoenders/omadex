@@ -1,4 +1,4 @@
-# Omadex
+# Quickdex
 
 Search any Pokémon and see its stats, types, and weaknesses, right from the Omarchy bar.
 
@@ -41,7 +41,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for attribution.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/RolfKoenders/omadex.git --enable
+omarchy plugin add https://github.com/RolfKoenders/quickdex.git --enable
 ```
 
 ## Configure
@@ -49,7 +49,7 @@ omarchy plugin add https://github.com/RolfKoenders/omadex.git --enable
 The bar icon defaults to the right side of the bar. To move it:
 
 ```bash
-omarchy bar move omadex --section right
+omarchy bar move quickdex --section right
 ```
 
 There's no settings screen, nothing else to configure.
@@ -57,13 +57,13 @@ There's no settings screen, nothing else to configure.
 ## Remove
 
 ```bash
-omarchy plugin remove omadex
+omarchy plugin remove quickdex
 ```
 
 This removes the plugin but not its local cache. Delete that too if you want a clean uninstall:
 
 ```bash
-rm -rf ~/.config/omarchy/omadex
+rm -rf ~/.config/omarchy/quickdex
 ```
 
 ## License

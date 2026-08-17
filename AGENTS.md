@@ -1,4 +1,4 @@
-# Omadex
+# Quickdex
 
 ## Project overview
 
@@ -10,10 +10,10 @@ WebSocket connection. Data comes from PokeAPI (`https://pokeapi.co`), a
 free, unauthenticated REST API, called directly from QML via the JS
 engine's built-in `XMLHttpRequest`.
 
-Canonical public repository: `https://github.com/RolfKoenders/omadex`.
+Canonical public repository: `https://github.com/RolfKoenders/quickdex`.
 
 The full v1 product spec is filed as a PRD at
-`https://github.com/RolfKoenders/omadex/issues/1`. Read it before making
+`https://github.com/RolfKoenders/quickdex/issues/1`. Read it before making
 scope decisions.
 
 ## Local development
@@ -22,9 +22,9 @@ For local development, symlink the checkout into the plugins directory
 instead of installing a release:
 
 ```bash
-ln -sfn "$PWD" ~/.config/omarchy/plugins/omadex
+ln -sfn "$PWD" ~/.config/omarchy/plugins/quickdex
 omarchy restart shell
-omarchy plugin enable omadex
+omarchy plugin enable quickdex
 ```
 
 Quickshell caches compiled QML/JS at `~/.cache/quickshell/qmlcache`. This

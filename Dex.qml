@@ -13,7 +13,7 @@ QtObject {
   id: root
 
   readonly property string home: Quickshell.env("HOME")
-  readonly property string cacheDir: home + "/.config/omarchy/omadex/cache"
+  readonly property string cacheDir: home + "/.config/omarchy/quickdex/cache"
   readonly property string indexPath: cacheDir + "/index.json"
   readonly property string typesPath: cacheDir + "/types.json"
 

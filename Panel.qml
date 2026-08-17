@@ -7,8 +7,8 @@ import qs.Commons
 // Dex owns the index, cache, and fetch state.
 Panel {
   id: root
-  moduleName: "omadex"
-  ipcTarget: "omadex"
+  moduleName: "quickdex"
+  ipcTarget: "quickdex"
 
   property Dex dex: Dex {}
 
@@ -146,7 +146,7 @@ Panel {
 
         PanelHero {
           width: parent.width
-          title: "Omadex"
+          title: "Quickdex"
           foreground: root.fg
           fontFamily: root.family
 

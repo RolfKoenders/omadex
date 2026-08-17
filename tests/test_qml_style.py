@@ -66,7 +66,7 @@ for path in QML_FILES:
 print("no hardcoded palette entries where the bar's colours belong")
 for path in QML_FILES:
     source = open(path, encoding="utf-8").read()
-    # Unlike hass, omadex has no settings-only surface to exempt — every
+    # Unlike hass, Quickdex has no settings-only surface to exempt — every
     # file here sits on the bar/popup, so this has no exemption list.
     for number, text in enumerate(source.splitlines(), start=1):
         check("Color.muted" not in text,

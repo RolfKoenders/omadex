@@ -4,11 +4,9 @@
 
 This repository is an Omarchy Quickshell plugin for looking up Pokemon
 stats, types, and defensive weaknesses from the desktop bar. It is pure
-QML/JavaScript, with no companion process, unlike this developer's other
-Omarchy plugin (`hass`), which needs one for its persistent Home Assistant
-WebSocket connection. Data comes from PokeAPI (`https://pokeapi.co`), a
-free, unauthenticated REST API, called directly from QML via the JS
-engine's built-in `XMLHttpRequest`.
+QML/JavaScript, with no companion process. Data comes from PokeAPI
+(`https://pokeapi.co`), a free, unauthenticated REST API, called directly
+from QML via the JS engine's built-in `XMLHttpRequest`.
 
 Canonical public repository: `https://github.com/RolfKoenders/quickdex`.
 
@@ -60,8 +58,8 @@ omarchy restart shell
   caller and owns everything above this layer.
 
 Keep transport, caching, curation/projection logic, and UI policy
-separate, the same split `hass` draws between its bridge, config store,
-domain modules, and panel.
+separate: each concern lives in its own file, not folded into `Dex.qml`
+or `Panel.qml`.
 
 ## Coding conventions
 

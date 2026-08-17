@@ -3,7 +3,7 @@
 
 These are the mistakes that do not throw, do not warn, and do not show up in
 any log — they only show up when you put a screenshot of this plugin next to
-a screenshot of a built-in one. Adapted from hass/tests/test_qml_style.py.
+a screenshot of a built-in one.
 """
 
 import os
@@ -66,8 +66,8 @@ for path in QML_FILES:
 print("no hardcoded palette entries where the bar's colours belong")
 for path in QML_FILES:
     source = open(path, encoding="utf-8").read()
-    # Unlike hass, Quickdex has no settings-only surface to exempt — every
-    # file here sits on the bar/popup, so this has no exemption list.
+    # Quickdex has no settings-only surface to exempt — every file here
+    # sits on the bar/popup, so this has no exemption list.
     for number, text in enumerate(source.splitlines(), start=1):
         check("Color.muted" not in text,
               "%s:%d uses Color.muted; dim the bar foreground instead"

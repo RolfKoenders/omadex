@@ -39,8 +39,7 @@ jobs:
         run: |
           # Neither the Omarchy shell's qs.Ui/qs.Commons imports nor the
           # omarchy CLI exist on a stock GitHub runner, so both steps below
-          # stay conditional on availability — the same pattern hass's own
-          # workflow uses.
+          # stay conditional on availability.
           if command -v qmlformat >/dev/null; then
             for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml; do
               qmlformat "$file" >/dev/null

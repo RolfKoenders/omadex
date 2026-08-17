@@ -1,9 +1,7 @@
 .pragma library
 
-// Thin, dumb XMLHttpRequest transport for PokeAPI. Deliberately kept free of
-// any caching/validation/curation logic — Dex.qml is the only caller, and it
-// owns everything above this layer, so nothing here needs to be mockable or
-// unit-tested (matches how hass treats its own transport, BridgeController).
+// Thin, dumb XMLHttpRequest transport for PokeAPI. No caching or validation
+// here; Dex.qml owns everything above this layer.
 
 var BASE_URL = "https://pokeapi.co/api/v2"
 
@@ -39,10 +37,8 @@ function fetchPokemon(nameOrId, onDone, onError) {
   request(BASE_URL + "/pokemon/" + encodeURIComponent(String(nameOrId)), onDone, onError)
 }
 
-// PokeAPI's damage_relations lists carry full {name, url} type references;
-// TypeMatchups only ever needs the bare name to check membership against an
-// attacking type string, so extract that here rather than leaking the raw
-// API shape into the domain logic.
+// PokeAPI's damage_relations lists carry full {name, url} refs; extract just
+// the name here rather than leaking the raw API shape into domain logic.
 function namesOf(refs) {
   var names = []
   var list = Array.isArray(refs) ? refs : []

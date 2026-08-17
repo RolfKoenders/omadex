@@ -25,10 +25,7 @@ Panel {
     dex.collapse()
   }
 
-  // The first arrow press only wakes the cursor at its current index (0) —
-  // it does not also move it. Without this split, the very first Down press
-  // both activates *and* applies delta=1 in the same call, landing on index
-  // 1 (the second result) instead of highlighting index 0 first.
+  // First press just wakes the cursor at index 0; only the next one moves it.
   function moveCursor(delta) {
     if (rowCount === 0) return
     if (!cursorActive) { cursorActive = true; return }
@@ -40,12 +37,8 @@ Panel {
     return dex.results[cursorIndex]
   }
 
-  // While a detail panel is expanded, the popup's own content can be taller
-  // than the fixed-height scroll area, so Up/Down switch from moving the
-  // list cursor to scrolling the popup instead — otherwise there is no
-  // keyboard-only way to reach a weakness bucket below the fold. ScrollView
-  // wraps non-Flickable content (this Column) in an internal Flickable
-  // automatically, which is what exposes contentY/contentHeight here.
+  // While a row is expanded, Up/Down scroll the popup instead of moving the
+  // cursor, since the expanded content can be taller than the scroll area.
   function scrollDetail(direction) {
     var flick = listScroller.contentItem
     if (!flick) return
@@ -59,9 +52,7 @@ Panel {
     if (result) dex.selectPokemon(result.name)
   }
 
-  // First Escape clears an active filter; second Escape (or Escape on an
-  // empty field) closes the popup — matches the shell's built-in emojis and
-  // clipboard pickers.
+  // First Escape clears the filter, second Escape closes the popup.
   function handleEscape() {
     if (dex.query.length) dex.query = ""
     else root.close()
@@ -76,12 +67,41 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
-  // A newly expanded (or collapsed) row starts scrolled to the top of the
-  // popup rather than wherever the previous row's scroll happened to land.
+  // Scrolls a newly expanded row to the top of the popup instead of leaving
+  // it wherever it sits in a long list. Retried on a short timer rather than
+  // done inline, since the row's Loader hasn't measured its content yet at
+  // the moment expandedSlug changes, and re-run again once detailPhase goes
+  // "ready" to cover a Pokemon that needed a fresh network fetch.
+  function scrollExpandedIntoView() {
+    scrollToRowTimer.restart()
+  }
+
+  Timer {
+    id: scrollToRowTimer
+    interval: 60
+    onTriggered: {
+      var flick = listScroller.contentItem
+      var slug = root.dex.expandedSlug
+      if (!flick || !slug) return
+      var idx = -1
+      for (var i = 0; i < root.dex.results.length; i++) {
+        if (root.dex.results[i].name === slug) { idx = i; break }
+      }
+      var item = idx >= 0 ? resultRepeater.itemAt(idx) : null
+      if (!item) return
+      var maxY = Math.max(0, flick.contentHeight - flick.height)
+      flick.contentY = Math.max(0, Math.min(maxY, item.y))
+    }
+  }
+
   Connections {
     target: root.dex
     function onExpandedSlugChanged() {
-      if (listScroller.contentItem) listScroller.contentItem.contentY = 0
+      if (root.dex.expandedSlug) root.scrollExpandedIntoView()
+      else if (listScroller.contentItem) listScroller.contentItem.contentY = 0
+    }
+    function onDetailPhaseChanged() {
+      if (root.dex.expandedSlug && root.dex.detailPhase === "ready") root.scrollExpandedIntoView()
     }
   }
 
@@ -100,11 +120,8 @@ Panel {
     owner: root
     bar: root.bar
     open: root.opened
-    // KeyboardPanel force-focuses this target itself on every open, with
-    // its own correctly-timed Exclusive->OnDemand priming sequence — do not
-    // also try to focus the field independently from Panel's onOpenedChanged,
-    // that raced this and lost, leaving focus on keyCatcher (which has no
-    // handler for plain text keys) instead of the field.
+    // KeyboardPanel force-focuses this on every open with its own timing —
+    // don't also focus it from Panel's onOpenedChanged, that races it.
     focusTarget: searchField
     contentWidth: panel.fittedContentWidth(Style.space(380))
     contentHeight: panel.fittedContentHeight(column.implicitHeight)
@@ -112,10 +129,8 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      // Belt-and-suspenders with the search field's own Keys handlers below:
-      // whichever one Qt actually routes the event to will accept it first,
-      // so only one of the two paths ever fires for a given keypress — both
-      // call the same root functions, so behavior is identical either way.
+      // Redundant with searchField's own Keys handlers below; whichever one
+      // Qt routes the event to fires, both call the same functions.
       onCloseRequested: root.handleEscape()
       onMoveRequested: function(dx, dy) {
         if (dy === 0) return
@@ -157,13 +172,6 @@ Panel {
             root.cursorIndex = 0
             root.cursorActive = false
           }
-          // See the belt-and-suspenders note on keyCatcher above — these
-          // fire as the focused item regardless of any ancestor's key
-          // priority, so navigation works whether or not PanelKeyCatcher's
-          // own handling reaches a focused text field first.
-          // When a row is expanded, arrows scroll the popup to reveal
-          // content below the fold instead of moving between list items —
-          // list navigation resumes automatically once the row collapses.
           Keys.onDownPressed: function(event) {
             if (root.dex.expandedSlug) root.scrollDetail(1)
             else root.moveCursor(1)
@@ -175,10 +183,8 @@ Panel {
             event.accepted = true
           }
           Keys.onEscapePressed: function(event) { root.handleEscape(); event.accepted = true }
-          // Confirmed live: wiring a custom Keys.onReturnPressed on this
-          // control intercepts Return before QQC2's own accepted() signal
-          // fires, so onAccepted never runs once a handler is here — call
-          // expandCursor() directly from both instead of relying on it.
+          // A custom Keys.onReturnPressed here stops QQC2's own accepted()
+          // signal from firing, so both call expandCursor() directly.
           Keys.onReturnPressed: function(event) { root.expandCursor(); event.accepted = true }
           Keys.onEnterPressed: function(event) { root.expandCursor(); event.accepted = true }
         }
@@ -234,10 +240,8 @@ Panel {
               id: resultRepeater
               model: root.dex.results
               delegate: ResultRow {
-                // See hass/Panel.qml's identical comment: required properties
-                // put the delegate in required-properties mode, which stops
-                // Qt from injecting `index` as a context property unless it
-                // is asked for by name here.
+                // Required properties put this delegate in required-mode,
+                // so index must be declared here or Qt stops injecting it.
                 required property int index
                 required property var modelData
 

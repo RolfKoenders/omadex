@@ -4,9 +4,8 @@ import qs.Commons
 import "TypeColors.js" as TypeColors
 
 // Stat/type/ability/weakness content for whichever Pokemon is currently
-// expanded. Reads dex.detail/detailPhase directly rather than taking them as
-// separate bound properties, since it only ever renders the one Pokemon Dex
-// currently has expanded.
+// expanded. Reads dex.detail/detailPhase directly, since this only ever
+// renders the one Pokemon Dex currently has expanded.
 Item {
   id: view
 
@@ -33,11 +32,8 @@ Item {
     return text.length ? text.charAt(0).toUpperCase() + text.slice(1) : ""
   }
 
-  // Presentation-only grouping, not core domain logic — the underlying
-  // buckets themselves come from TypeMatchups.weaknesses and are covered by
-  // tests/test_type_matchups.js; this just attaches a label and a severity
-  // color to each non-empty bucket, most dangerous first, for the chip rows
-  // below.
+  // Presentation-only: attaches a label and severity color to each
+  // non-empty bucket from TypeMatchups.weaknesses, most dangerous first.
   function weaknessGroups(weaknesses) {
     if (!weaknesses) return []
     var groups = []
@@ -81,9 +77,8 @@ Item {
       font.pixelSize: Style.font.bodySmall
     }
 
-    // Each section below is a single child of this outer Column, so
-    // Style.spacing.lg only ever separates whole sections from each other —
-    // every section manages its own, much tighter, internal spacing.
+    // Each section is a single child here, so Style.spacing.lg only
+    // separates whole sections; each manages its own tighter spacing.
     Column {
       width: parent.width
       visible: view.phase === "ready" && view.detail !== null
@@ -94,8 +89,7 @@ Item {
         width: parent.width
         spacing: Style.spacing.xl
 
-        // Soft type-tinted frame behind the artwork — a common Pokedex
-        // touch, and a cheap way to make the header feel less flat.
+        // Soft type-tinted frame behind the artwork.
         Rectangle {
           id: artworkFrame
           width: Style.space(140)
@@ -114,19 +108,13 @@ Item {
 
             readonly property string localSource: view.dex && view.dex.artworkPath
               ? ("file://" + view.dex.artworkPath) : ""
-            // Local cache first (instant, no network, survives a shell
-            // restart). On a first-ever lookup the local file doesn't exist
-            // yet, so this falls back to the remote URL — as a live binding,
-            // not a one-shot check, since detail (and its spriteUrl) usually
-            // only arrives *after* the local load has already failed; a
-            // one-shot check made at the moment of failure would see detail
-            // still null and never recover once it did arrive.
+            // Falls back to the remote URL if the local file doesn't exist
+            // yet (first-ever lookup). A live binding, not a one-shot check,
+            // since detail usually only arrives after the local load fails.
             property bool localFailed: false
             source: localFailed ? (view.detail ? view.detail.spriteUrl : "") : localSource
-            // `source` reads back as a QUrl, not the plain JS string it was
-            // assigned from — comparing it to localSource with === silently
-            // fails (different types, even though they stringify the same),
-            // so this must coerce both sides to String first.
+            // source reads back as a QUrl, not the plain string it was
+            // assigned, so this must coerce both sides to String to compare.
             onStatusChanged: {
               if (status === Image.Error && String(source) === localSource) localFailed = true
             }
@@ -289,11 +277,8 @@ Item {
           width: parent.width
           spacing: Style.spacing.sm
 
-          // Label and its type chips share one wrapping Flow instead of a
-          // label row above a chip row, so a group with just one or two
-          // types (the common case) stays a single line — five separate
-          // two-line groups pushed everything below the fold in the popup's
-          // capped-height scroll area.
+          // Label and chips share one wrapping Flow so a group with just
+          // one or two types stays a single line instead of two.
           Repeater {
             model: view.detail ? view.weaknessGroups(view.detail.weaknesses) : []
             delegate: Flow {

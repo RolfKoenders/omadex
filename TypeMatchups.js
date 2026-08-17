@@ -3,22 +3,17 @@
 // Defensive type-effectiveness math. Pure and dependency-free so it can be
 // tested without a Quickshell runtime — see tests/test_type_matchups.js.
 
-// The fixed universe of attacking types to check a Pokemon's weaknesses
-// against. This must NOT be derived from Object.keys(typeChart): in
-// production, typeChart only ever holds entries for the Pokemon's own
-// defending type(s) (Dex.qml fetches lazily, not all 18 up front), so
-// deriving the attacking-type set from its keys would only ever check a
-// type against itself and silently miss every real weakness.
+// Must NOT be derived from Object.keys(typeChart): in production typeChart
+// only holds the Pokemon's own defending type(s), fetched lazily, so that
+// would only ever check a type against itself and miss every real weakness.
 var ALL_TYPES = [
   "normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison",
   "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark",
   "steel", "fairy"
 ]
 
-// One Pokemon's own type multiplies its effect independently; combining a
-// dual type is the product of the two per-attacking-type multipliers, not an
-// average or a max. An immunity (0x) on either type must zero the result
-// regardless of what the other type does — see the Golurk/Electric fixture.
+// Dual-type combining is the product of both per-type multipliers, not an
+// average or a max — an immunity (0x) on either type must zero the result.
 function multiplierFor(attackingType, defendingTypes, typeChart) {
   var types = Array.isArray(defendingTypes) ? defendingTypes : []
   var result = 1

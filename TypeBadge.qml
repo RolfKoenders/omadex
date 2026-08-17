@@ -20,9 +20,7 @@ Rectangle {
     id: label
     anchors.centerIn: parent
     textFormat: Text.PlainText
-    // Type colors range from mid to light across the palette, so a fixed
-    // dark label reads reliably on all of them rather than tuning contrast
-    // per type.
+    // Fixed dark text reads reliably across the whole mid-to-light palette.
     color: "#1b1b26"
     text: badge.typeName.length
       ? badge.typeName.charAt(0).toUpperCase() + badge.typeName.slice(1) : ""

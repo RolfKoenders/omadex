@@ -52,17 +52,14 @@ CursorSurface {
       width: parent.width
       implicitHeight: Math.max(sprite.height, labels.implicitHeight)
 
-      // Remote, asynchronous, per-form thumbnail — tolerant of failing
-      // offline, since it just renders nothing rather than blocking
-      // anything. Unlike the expanded detail's official artwork, list
-      // thumbnails are not locally cached: they're small, numerous, and
-      // only ever seen while actively browsing search results online.
+      // Remote per-form thumbnail, not locally cached like the detail
+      // artwork — small, numerous, and only seen while online anyway.
       Image {
         id: sprite
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
-        width: Style.font.heading
-        height: Style.font.heading
+        width: Style.font.display
+        height: Style.font.display
         asynchronous: true
         fillMode: Image.PreserveAspectFit
         source: PokeApi.spriteUrlFor(row.entrySpriteId)

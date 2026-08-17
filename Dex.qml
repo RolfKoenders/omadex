@@ -7,11 +7,8 @@ import "TypeMatchups.js" as TypeMatchups
 import "CacheValidation.js" as CacheValidation
 import "PokeApi.js" as PokeApi
 
-// Owner of the search index, the type chart, and per-Pokemon detail — cache,
-// fetch, and derived state. Panel.qml owns keyboard/UI concerns only; this
-// separation is what lets v2's team calculator reuse this object wholesale.
-// Not a manifest `service`: v1 has one entry point, so Dex is just a plain
-// child property of Panel (`property Dex dex: Dex {}`).
+// Owner of the search index, type chart, and per-Pokemon detail: cache,
+// fetch, and derived state. Panel.qml owns keyboard/UI concerns only.
 QtObject {
   id: root
 
@@ -36,9 +33,8 @@ QtObject {
   // idle | loading | error | ready
   property string detailPhase: "idle"
   property var detail: null
-  // Guards against a stale async callback (FileView or XHR) for a Pokemon
-  // the user has already navigated away from overwriting current state —
-  // mirrors hass's connectionGeneration pattern for the same race class.
+  // Guards against a stale async callback overwriting state for a Pokemon
+  // the user has already navigated away from.
   property string pendingSlug: ""
 
   readonly property string artworkPath: root.expandedSlug
@@ -133,12 +129,9 @@ QtObject {
 
   property var typeChart: ({})
 
-  // Fetches only the types not already cached, merges into the single
-  // in-memory chart, then writes the whole merged object back. Never a
-  // partial read-modify-write against the disk file — two overlapping
-  // lookups fetching different types would otherwise race the file and
-  // silently drop a key, which is exactly the bug class the Golurk/Electric
-  // immunity test exists to catch further downstream.
+  // Fetches only the types not already cached, then merges and writes the
+  // whole chart back at once — never a partial read-modify-write, which
+  // could otherwise race two overlapping lookups and silently drop a key.
   function ensureTypesLoaded(types, onReady) {
     var missing = []
     for (var i = 0; i < types.length; i++) {
@@ -170,9 +163,8 @@ QtObject {
     }
   }
 
-  // Takes the type name as a parameter (rather than closing over the loop
-  // variable directly) so each callback captures its own type, not whatever
-  // the loop variable ended on.
+  // Takes the type name as a parameter so each callback captures its own
+  // type rather than whatever the loop variable ended on.
   function fetchOneType(name, onDone, onError) {
     PokeApi.fetchType(name, function(relations) { onDone(name, relations) }, onError)
   }
@@ -247,10 +239,8 @@ QtObject {
 
   // ------------------------------------------------------------ artwork
 
-  // Best-effort, one-shot local cache of the official-artwork bytes so a
-  // repeat lookup — even after a shell restart — never re-hits the network.
-  // Only triggered on a fresh network fetch, never on a disk-cache hit, so a
-  // cache hit costs zero network calls of any kind, image included.
+  // Best-effort local cache of the artwork bytes, only triggered on a fresh
+  // fetch (never on a disk-cache hit), so a repeat lookup needs no network.
   property Process artworkProcess: Process {}
 
   function downloadArtwork(slug, url) {

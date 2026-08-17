@@ -2,8 +2,7 @@
 
 // Raw PokeAPI /pokemon/{id-or-name} JSON in, display-ready fields out.
 // TypeMatchups is passed in explicitly rather than imported, since plain
-// Node (used by tests/test_pokemon_detail.js) has no QML module resolution —
-// the same reason hass's RowModel.project takes Model as a parameter.
+// Node (used by the tests) has no QML module resolution.
 
 var STAT_LABELS = {
   "hp": "HP",

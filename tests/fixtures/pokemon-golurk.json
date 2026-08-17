@@ -1,0 +1,89 @@
+{
+  "id": 623,
+  "name": "golurk",
+  "height": 28,
+  "weight": 3300,
+  "types": [
+    {
+      "slot": 1,
+      "type": {
+        "name": "ground"
+      }
+    },
+    {
+      "slot": 2,
+      "type": {
+        "name": "ghost"
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "ability": {
+        "name": "iron-fist"
+      },
+      "is_hidden": false,
+      "slot": 1
+    },
+    {
+      "ability": {
+        "name": "klutz"
+      },
+      "is_hidden": false,
+      "slot": 2
+    },
+    {
+      "ability": {
+        "name": "no-guard"
+      },
+      "is_hidden": true,
+      "slot": 3
+    }
+  ],
+  "stats": [
+    {
+      "base_stat": 89,
+      "stat": {
+        "name": "hp"
+      }
+    },
+    {
+      "base_stat": 124,
+      "stat": {
+        "name": "attack"
+      }
+    },
+    {
+      "base_stat": 80,
+      "stat": {
+        "name": "defense"
+      }
+    },
+    {
+      "base_stat": 55,
+      "stat": {
+        "name": "special-attack"
+      }
+    },
+    {
+      "base_stat": 80,
+      "stat": {
+        "name": "special-defense"
+      }
+    },
+    {
+      "base_stat": 55,
+      "stat": {
+        "name": "speed"
+      }
+    }
+  ],
+  "sprites": {
+    "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/623.png",
+    "other": {
+      "official-artwork": {
+        "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/623.png"
+      }
+    }
+  }
+}

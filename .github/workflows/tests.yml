@@ -1,0 +1,59 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Use the minimum supported Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+
+      - name: Pure JS domain modules (index, weaknesses, projection, cache)
+        run: |
+          node tests/test_type_matchups.js
+          node tests/test_index_search.js
+          node tests/test_pokemon_detail.js
+          node tests/test_cache_validation.js
+
+      - name: QML house style (fonts, palette, text format)
+        run: python3 tests/test_qml_style.py
+
+      - name: QML parser when available on the runner
+        run: |
+          # Neither the Omarchy shell's qs.Ui/qs.Commons imports nor the
+          # omarchy CLI exist on a stock GitHub runner, so both steps below
+          # stay conditional on availability — the same pattern hass's own
+          # workflow uses.
+          if command -v qmlformat >/dev/null; then
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml; do
+              qmlformat "$file" >/dev/null
+            done
+          fi
+          if command -v qmllint >/dev/null; then
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml; do
+              qmllint -I "$OMARCHY_PATH/shell" "$file"
+            done
+          fi
+
+      - name: Omarchy plugin validation when available on the runner
+        run: |
+          if command -v omarchy >/dev/null; then
+            omarchy plugin validate .
+          fi

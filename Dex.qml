@@ -1,0 +1,272 @@
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import "IndexSearch.js" as IndexSearch
+import "PokemonDetail.js" as PokemonDetail
+import "TypeMatchups.js" as TypeMatchups
+import "CacheValidation.js" as CacheValidation
+import "PokeApi.js" as PokeApi
+
+// Owner of the search index, the type chart, and per-Pokemon detail — cache,
+// fetch, and derived state. Panel.qml owns keyboard/UI concerns only; this
+// separation is what lets v2's team calculator reuse this object wholesale.
+// Not a manifest `service`: v1 has one entry point, so Dex is just a plain
+// child property of Panel (`property Dex dex: Dex {}`).
+QtObject {
+  id: root
+
+  readonly property string home: Quickshell.env("HOME")
+  readonly property string cacheDir: home + "/.config/omarchy/omadex/cache"
+  readonly property string indexPath: cacheDir + "/index.json"
+  readonly property string typesPath: cacheDir + "/types.json"
+
+  // ------------------------------------------------------------ search
+
+  // loading | error | ready
+  property string indexPhase: "loading"
+  property var cachedEntries: []
+  property string query: ""
+
+  readonly property var results: root.indexPhase === "ready"
+    ? IndexSearch.filterIndex(root.cachedEntries, root.query) : []
+
+  // ------------------------------------------------------------ detail
+
+  property string expandedSlug: ""
+  // idle | loading | error | ready
+  property string detailPhase: "idle"
+  property var detail: null
+  // Guards against a stale async callback (FileView or XHR) for a Pokemon
+  // the user has already navigated away from overwriting current state —
+  // mirrors hass's connectionGeneration pattern for the same race class.
+  property string pendingSlug: ""
+
+  readonly property string artworkPath: root.expandedSlug
+    ? (root.cacheDir + "/pokemon/" + root.expandedSlug + ".png") : ""
+
+  function selectPokemon(slug) {
+    if (root.expandedSlug === slug) { root.collapse(); return }
+    root.expandedSlug = slug
+    root.pendingSlug = slug
+    root.detail = null
+    root.detailPhase = "loading"
+    root.detailCacheFile.path = root.cacheDir + "/pokemon/" + slug + ".json"
+    root.detailCacheFile.reload()
+  }
+
+  function collapse() {
+    root.expandedSlug = ""
+    root.pendingSlug = ""
+    root.detailPhase = "idle"
+    root.detail = null
+  }
+
+  // ------------------------------------------------------------ index cache
+
+  property FileView indexFile: FileView {
+    path: root.indexPath
+    watchChanges: false
+    printErrors: false
+    atomicWrites: true
+    onLoaded: root.onIndexFileLoaded(text())
+    onLoadFailed: root.fetchAndCacheIndex()
+  }
+
+  function onIndexFileLoaded(text) {
+    var parsed = null
+    try { parsed = JSON.parse(text) } catch (err) { parsed = null }
+    if (!parsed || !CacheValidation.isValidIndexShape(parsed)) {
+      root.fetchAndCacheIndex()
+      return
+    }
+    root.cachedEntries = parsed.entries
+    root.indexPhase = "ready"
+    if (CacheValidation.isIndexStale(parsed.fetchedAt, Date.now(), CacheValidation.INDEX_TTL_MS)) {
+      root.refreshIndexInBackground()
+    }
+  }
+
+  function fetchAndCacheIndex() {
+    root.indexPhase = "loading"
+    PokeApi.fetchIndex(function(rawEntries) {
+      var curated = IndexSearch.curateIndex(rawEntries)
+      root.cachedEntries = curated
+      root.indexPhase = "ready"
+      root.writeIndexCache(curated)
+    }, function(message) {
+      root.indexPhase = "error"
+    })
+  }
+
+  // A background refresh failing must not disturb whatever is already
+  // serving search results — only a first-ever fetch failure is a real error.
+  function refreshIndexInBackground() {
+    PokeApi.fetchIndex(function(rawEntries) {
+      var curated = IndexSearch.curateIndex(rawEntries)
+      root.cachedEntries = curated
+      root.writeIndexCache(curated)
+    }, function(message) {})
+  }
+
+  function writeIndexCache(entries) {
+    root.indexFile.setText(JSON.stringify({ fetchedAt: Date.now(), entries: entries }))
+  }
+
+  // ------------------------------------------------------------ type chart
+
+  property FileView typesFile: FileView {
+    path: root.typesPath
+    watchChanges: false
+    printErrors: false
+    atomicWrites: true
+    onLoaded: root.onTypesFileLoaded(text())
+    onLoadFailed: {}
+  }
+
+  function onTypesFileLoaded(text) {
+    var parsed = null
+    try { parsed = JSON.parse(text) } catch (err) { parsed = null }
+    if (parsed && CacheValidation.isValidTypeChartShape(parsed)) {
+      root.typeChart = parsed
+    }
+  }
+
+  property var typeChart: ({})
+
+  // Fetches only the types not already cached, merges into the single
+  // in-memory chart, then writes the whole merged object back. Never a
+  // partial read-modify-write against the disk file — two overlapping
+  // lookups fetching different types would otherwise race the file and
+  // silently drop a key, which is exactly the bug class the Golurk/Electric
+  // immunity test exists to catch further downstream.
+  function ensureTypesLoaded(types, onReady) {
+    var missing = []
+    for (var i = 0; i < types.length; i++) {
+      if (!root.typeChart[types[i]]) missing.push(types[i])
+    }
+    if (missing.length === 0) { onReady(); return }
+    root.fetchMissingTypes(missing, onReady)
+  }
+
+  function fetchMissingTypes(missing, onReady) {
+    var remaining = missing.length
+    var merged = {}
+    var hadError = false
+    for (var i = 0; i < missing.length; i++) {
+      root.fetchOneType(missing[i], function(name, relations) {
+        merged[name] = relations
+        remaining--
+        if (remaining === 0) {
+          root.applyTypeChartMerge(merged)
+          if (!hadError) onReady()
+        }
+      }, function() {
+        hadError = true
+        remaining--
+        if (remaining === 0) {
+          root.applyTypeChartMerge(merged)
+        }
+      })
+    }
+  }
+
+  // Takes the type name as a parameter (rather than closing over the loop
+  // variable directly) so each callback captures its own type, not whatever
+  // the loop variable ended on.
+  function fetchOneType(name, onDone, onError) {
+    PokeApi.fetchType(name, function(relations) { onDone(name, relations) }, onError)
+  }
+
+  function applyTypeChartMerge(newEntries) {
+    var merged = {}
+    for (var key in root.typeChart) merged[key] = root.typeChart[key]
+    for (var name in newEntries) merged[name] = newEntries[name]
+    root.typeChart = merged
+    root.typesFile.setText(JSON.stringify(merged))
+  }
+
+  // ------------------------------------------------------------ detail cache
+
+  property FileView detailCacheFile: FileView {
+    watchChanges: false
+    printErrors: false
+    atomicWrites: true
+    onLoaded: root.onDetailFileLoaded(path, text())
+    onLoadFailed: root.onDetailFileMissing(path)
+  }
+
+  function slugForPath(path) {
+    var match = /\/([^/]+)\.json$/.exec(String(path || ""))
+    return match ? match[1] : ""
+  }
+
+  function onDetailFileLoaded(path, text) {
+    var slug = root.slugForPath(path)
+    if (slug !== root.pendingSlug) return
+    var parsed = null
+    try { parsed = JSON.parse(text) } catch (err) { parsed = null }
+    if (!parsed || !CacheValidation.isValidDetailShape(parsed)) {
+      root.fetchDetailFromNetwork(slug)
+      return
+    }
+    root.detail = parsed
+    root.detailPhase = "ready"
+    // Loaded from disk: artwork was already attempted on the original fetch.
+  }
+
+  function onDetailFileMissing(path) {
+    var slug = root.slugForPath(path)
+    if (slug !== root.pendingSlug) return
+    root.fetchDetailFromNetwork(slug)
+  }
+
+  function fetchDetailFromNetwork(slug) {
+    PokeApi.fetchPokemon(slug, function(raw) {
+      if (slug !== root.pendingSlug) return
+      var typeNames = []
+      for (var i = 0; i < raw.types.length; i++) typeNames.push(raw.types[i].type.name)
+      root.ensureTypesLoaded(typeNames, function() {
+        if (slug !== root.pendingSlug) return
+        var projected = PokemonDetail.projectDetail(raw, root.typeChart, TypeMatchups)
+        root.detail = projected
+        root.detailPhase = "ready"
+        root.writeDetailCache(slug, projected)
+        root.downloadArtwork(slug, projected.spriteUrl)
+      })
+    }, function(message) {
+      if (slug !== root.pendingSlug) return
+      root.detailPhase = "error"
+    })
+  }
+
+  function writeDetailCache(slug, projected) {
+    // Only reached once pendingSlug still matches, so detailCacheFile.path
+    // is still bound to this slug's own file.
+    root.detailCacheFile.setText(JSON.stringify(projected))
+  }
+
+  // ------------------------------------------------------------ artwork
+
+  // Best-effort, one-shot local cache of the official-artwork bytes so a
+  // repeat lookup — even after a shell restart — never re-hits the network.
+  // Only triggered on a fresh network fetch, never on a disk-cache hit, so a
+  // cache hit costs zero network calls of any kind, image included.
+  property Process artworkProcess: Process {}
+
+  function downloadArtwork(slug, url) {
+    if (!url || root.artworkProcess.running) return
+    var path = root.cacheDir + "/pokemon/" + slug + ".png"
+    root.artworkProcess.command = ["curl", "-sf", "--create-dirs", "-o", path, url]
+    root.artworkProcess.running = true
+  }
+
+  // ------------------------------------------------------------ startup
+
+  // FileView does not create missing parent directories; this also covers
+  // cacheDir itself since mkdir -p creates every missing ancestor.
+  property Process cacheDirProcess: Process {
+    command: ["mkdir", "-p", root.cacheDir + "/pokemon"]
+  }
+
+  Component.onCompleted: root.cacheDirProcess.running = true
+}

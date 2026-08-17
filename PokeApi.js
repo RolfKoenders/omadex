@@ -1,0 +1,70 @@
+.pragma library
+
+// Thin, dumb XMLHttpRequest transport for PokeAPI. Deliberately kept free of
+// any caching/validation/curation logic — Dex.qml is the only caller, and it
+// owns everything above this layer, so nothing here needs to be mockable or
+// unit-tested (matches how hass treats its own transport, BridgeController).
+
+var BASE_URL = "https://pokeapi.co/api/v2"
+
+function request(url, onDone, onError) {
+  var xhr = new XMLHttpRequest()
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== XMLHttpRequest.DONE) return
+    if (xhr.status < 200 || xhr.status >= 300) {
+      onError("HTTP " + xhr.status)
+      return
+    }
+    try {
+      onDone(JSON.parse(xhr.responseText))
+    } catch (err) {
+      onError("Invalid JSON from " + url)
+    }
+  }
+  xhr.onerror = function() { onError("Network error requesting " + url) }
+  xhr.open("GET", url)
+  xhr.send()
+}
+
+// One bulk request for the whole name/number index. A large, fixed limit
+// (rather than today's live count) avoids silently truncating results as
+// new games/generations add more Pokemon over time.
+function fetchIndex(onDone, onError) {
+  request(BASE_URL + "/pokemon?limit=100000&offset=0", function(body) {
+    onDone(Array.isArray(body.results) ? body.results : [])
+  }, onError)
+}
+
+function fetchPokemon(nameOrId, onDone, onError) {
+  request(BASE_URL + "/pokemon/" + encodeURIComponent(String(nameOrId)), onDone, onError)
+}
+
+// PokeAPI's damage_relations lists carry full {name, url} type references;
+// TypeMatchups only ever needs the bare name to check membership against an
+// attacking type string, so extract that here rather than leaking the raw
+// API shape into the domain logic.
+function namesOf(refs) {
+  var names = []
+  var list = Array.isArray(refs) ? refs : []
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && typeof list[i].name === "string") names.push(list[i].name)
+  }
+  return names
+}
+
+function fetchType(name, onDone, onError) {
+  request(BASE_URL + "/type/" + encodeURIComponent(String(name)), function(body) {
+    var relations = body.damage_relations || {}
+    onDone({
+      double_damage_from: namesOf(relations.double_damage_from),
+      half_damage_from: namesOf(relations.half_damage_from),
+      no_damage_from: namesOf(relations.no_damage_from)
+    })
+  }, onError)
+}
+
+// Row thumbnails use the small per-form sprite directly by id, bypassing a
+// full /pokemon fetch — the bulk index already gives us the id for free.
+function spriteUrlFor(spriteId) {
+  return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/" + spriteId + ".png"
+}

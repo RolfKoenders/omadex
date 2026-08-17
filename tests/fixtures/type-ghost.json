@@ -1,0 +1,5 @@
+{
+  "double_damage_from": ["dark", "ghost"],
+  "half_damage_from": ["bug", "poison"],
+  "no_damage_from": ["fighting", "normal"]
+}

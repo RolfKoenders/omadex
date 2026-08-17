@@ -1,0 +1,82 @@
+{
+  "id": 6,
+  "name": "charizard",
+  "height": 17,
+  "weight": 905,
+  "types": [
+    {
+      "slot": 1,
+      "type": {
+        "name": "fire"
+      }
+    },
+    {
+      "slot": 2,
+      "type": {
+        "name": "flying"
+      }
+    }
+  ],
+  "abilities": [
+    {
+      "ability": {
+        "name": "blaze"
+      },
+      "is_hidden": false,
+      "slot": 1
+    },
+    {
+      "ability": {
+        "name": "solar-power"
+      },
+      "is_hidden": true,
+      "slot": 3
+    }
+  ],
+  "stats": [
+    {
+      "base_stat": 78,
+      "stat": {
+        "name": "hp"
+      }
+    },
+    {
+      "base_stat": 84,
+      "stat": {
+        "name": "attack"
+      }
+    },
+    {
+      "base_stat": 78,
+      "stat": {
+        "name": "defense"
+      }
+    },
+    {
+      "base_stat": 109,
+      "stat": {
+        "name": "special-attack"
+      }
+    },
+    {
+      "base_stat": 85,
+      "stat": {
+        "name": "special-defense"
+      }
+    },
+    {
+      "base_stat": 100,
+      "stat": {
+        "name": "speed"
+      }
+    }
+  ],
+  "sprites": {
+    "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+    "other": {
+      "official-artwork": {
+        "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png"
+      }
+    }
+  }
+}

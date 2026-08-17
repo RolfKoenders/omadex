@@ -15,15 +15,10 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Use the minimum supported Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: "3.11"
 
       - name: Pure JS domain modules (index, weaknesses, projection, cache)
         run: |
@@ -42,12 +37,12 @@ jobs:
           # stay conditional on availability — the same pattern hass's own
           # workflow uses.
           if command -v qmlformat >/dev/null; then
-            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml; do
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml; do
               qmlformat "$file" >/dev/null
             done
           fi
           if command -v qmllint >/dev/null; then
-            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml; do
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml; do
               qmllint -I "$OMARCHY_PATH/shell" "$file"
             done
           fi

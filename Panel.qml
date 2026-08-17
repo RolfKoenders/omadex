@@ -40,6 +40,20 @@ Panel {
     return dex.results[cursorIndex]
   }
 
+  // While a detail panel is expanded, the popup's own content can be taller
+  // than the fixed-height scroll area, so Up/Down switch from moving the
+  // list cursor to scrolling the popup instead — otherwise there is no
+  // keyboard-only way to reach a weakness bucket below the fold. ScrollView
+  // wraps non-Flickable content (this Column) in an internal Flickable
+  // automatically, which is what exposes contentY/contentHeight here.
+  function scrollDetail(direction) {
+    var flick = listScroller.contentItem
+    if (!flick) return
+    var step = Style.space(72)
+    var maxY = Math.max(0, flick.contentHeight - flick.height)
+    flick.contentY = Math.max(0, Math.min(maxY, flick.contentY + direction * step))
+  }
+
   function expandCursor() {
     var result = currentResult()
     if (result) dex.selectPokemon(result.name)
@@ -61,6 +75,15 @@ Panel {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+
+  // A newly expanded (or collapsed) row starts scrolled to the top of the
+  // popup rather than wherever the previous row's scroll happened to land.
+  Connections {
+    target: root.dex
+    function onExpandedSlugChanged() {
+      if (listScroller.contentItem) listScroller.contentItem.contentY = 0
+    }
+  }
 
   BarIconButton {
     id: button
@@ -94,7 +117,11 @@ Panel {
       // so only one of the two paths ever fires for a given keypress — both
       // call the same root functions, so behavior is identical either way.
       onCloseRequested: root.handleEscape()
-      onMoveRequested: function(dx, dy) { if (dy !== 0) root.moveCursor(dy) }
+      onMoveRequested: function(dx, dy) {
+        if (dy === 0) return
+        if (root.dex.expandedSlug) root.scrollDetail(dy)
+        else root.moveCursor(dy)
+      }
       onActivateRequested: root.expandCursor()
 
       Column {
@@ -134,8 +161,19 @@ Panel {
           // fire as the focused item regardless of any ancestor's key
           // priority, so navigation works whether or not PanelKeyCatcher's
           // own handling reaches a focused text field first.
-          Keys.onDownPressed: function(event) { root.moveCursor(1); event.accepted = true }
-          Keys.onUpPressed: function(event) { root.moveCursor(-1); event.accepted = true }
+          // When a row is expanded, arrows scroll the popup to reveal
+          // content below the fold instead of moving between list items —
+          // list navigation resumes automatically once the row collapses.
+          Keys.onDownPressed: function(event) {
+            if (root.dex.expandedSlug) root.scrollDetail(1)
+            else root.moveCursor(1)
+            event.accepted = true
+          }
+          Keys.onUpPressed: function(event) {
+            if (root.dex.expandedSlug) root.scrollDetail(-1)
+            else root.moveCursor(-1)
+            event.accepted = true
+          }
           Keys.onEscapePressed: function(event) { root.handleEscape(); event.accepted = true }
           // Confirmed live: wiring a custom Keys.onReturnPressed on this
           // control intercepts Return before QQC2's own accepted() signal

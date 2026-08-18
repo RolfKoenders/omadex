@@ -37,6 +37,16 @@ function fetchPokemon(nameOrId, onDone, onError) {
   request(BASE_URL + "/pokemon/" + encodeURIComponent(String(nameOrId)), onDone, onError)
 }
 
+// Only ever used transiently to find a species' evolution-chain id, so this
+// is never cached to disk the way the chain itself is.
+function fetchSpecies(nameOrId, onDone, onError) {
+  request(BASE_URL + "/pokemon-species/" + encodeURIComponent(String(nameOrId)), onDone, onError)
+}
+
+function fetchEvolutionChain(chainId, onDone, onError) {
+  request(BASE_URL + "/evolution-chain/" + encodeURIComponent(String(chainId)), onDone, onError)
+}
+
 // PokeAPI's damage_relations lists carry full {name, url} refs; extract just
 // the name here rather than leaking the raw API shape into domain logic.
 function namesOf(refs) {

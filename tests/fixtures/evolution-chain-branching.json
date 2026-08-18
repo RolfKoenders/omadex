@@ -1,0 +1,189 @@
+{
+  "chain": {
+    "species": {
+      "name": "eevee"
+    },
+    "evolution_details": [],
+    "evolves_to": [
+      {
+        "species": {
+          "name": "vaporeon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "use-item"
+            },
+            "item": {
+              "name": "water-stone"
+            }
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "jolteon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "use-item"
+            },
+            "item": {
+              "name": "thunder-stone"
+            }
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "flareon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "use-item"
+            },
+            "item": {
+              "name": "fire-stone"
+            }
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "espeon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "level-up"
+            },
+            "time_of_day": "day",
+            "min_happiness": 160
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "umbreon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "level-up"
+            },
+            "time_of_day": "night",
+            "min_happiness": 160
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "leafeon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "use-item"
+            },
+            "item": {
+              "name": "leaf-stone"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "glaceon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "use-item"
+            },
+            "item": {
+              "name": "ice-stone"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          }
+        ],
+        "evolves_to": []
+      },
+      {
+        "species": {
+          "name": "sylveon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "level-up"
+            }
+          },
+          {
+            "trigger": {
+              "name": "level-up"
+            },
+            "min_happiness": 160
+          }
+        ],
+        "evolves_to": []
+      }
+    ]
+  }
+}

@@ -61,6 +61,7 @@ function projectDetail(pokemon, typeChart, matchups) {
   return {
     id: pokemon.id,
     label: labelFromName(pokemon.name),
+    speciesName: pokemon.species.name,
     dexNumberPadded: padNumber(pokemon.id),
     spriteUrl: spriteUrlFor(pokemon),
     heightM: pokemon.height / 10,

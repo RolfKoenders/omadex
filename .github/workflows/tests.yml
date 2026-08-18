@@ -27,6 +27,7 @@ jobs:
           node tests/test_pokemon_detail.js
           node tests/test_cache_validation.js
           node tests/test_recents.js
+          node tests/test_evolution.js
 
       - name: QML house style (fonts, palette, text format)
         run: python3 tests/test_qml_style.py

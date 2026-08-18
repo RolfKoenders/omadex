@@ -7,6 +7,7 @@ import "TypeMatchups.js" as TypeMatchups
 import "CacheValidation.js" as CacheValidation
 import "PokeApi.js" as PokeApi
 import "Recents.js" as Recents
+import "Evolution.js" as Evolution
 
 // Owner of the search index, type chart, and per-Pokemon detail: cache,
 // fetch, and derived state. Panel.qml owns keyboard/UI concerns only.
@@ -18,6 +19,7 @@ QtObject {
   readonly property string indexPath: cacheDir + "/index.json"
   readonly property string typesPath: cacheDir + "/types.json"
   readonly property string recentsPath: cacheDir + "/recents.json"
+  readonly property string evolutionCacheDir: cacheDir + "/evolution"
 
   // ------------------------------------------------------------ search
 
@@ -71,12 +73,18 @@ QtObject {
   readonly property string artworkPath: root.expandedSlug
     ? (root.cacheDir + "/pokemon/" + root.expandedSlug + ".png") : ""
 
+  // idle | loading | error | ready
+  property string evolutionPhase: "idle"
+  property var evolutionNeighbors: null
+
   function selectPokemon(slug) {
     if (root.expandedSlug === slug) { root.collapse(); return }
     root.expandedSlug = slug
     root.pendingSlug = slug
     root.detail = null
     root.detailPhase = "loading"
+    root.evolutionPhase = "loading"
+    root.evolutionNeighbors = null
     root.detailCacheFile.path = root.cacheDir + "/pokemon/" + slug + ".json"
     root.detailCacheFile.reload()
   }
@@ -86,6 +94,8 @@ QtObject {
     root.pendingSlug = ""
     root.detailPhase = "idle"
     root.detail = null
+    root.evolutionPhase = "idle"
+    root.evolutionNeighbors = null
   }
 
   // ------------------------------------------------------------ index cache
@@ -235,6 +245,7 @@ QtObject {
     root.detail = parsed
     root.detailPhase = "ready"
     root.markViewed(slug)
+    root.fetchEvolution(slug, parsed.speciesName)
     // Loaded from disk: artwork was already attempted on the original fetch.
   }
 
@@ -255,6 +266,7 @@ QtObject {
         root.detail = projected
         root.detailPhase = "ready"
         root.markViewed(slug)
+        root.fetchEvolution(slug, projected.speciesName)
         root.writeDetailCache(slug, projected)
         root.downloadArtwork(slug, projected.spriteUrl)
       })
@@ -268,6 +280,78 @@ QtObject {
     // Only reached once pendingSlug still matches, so detailCacheFile.path
     // is still bound to this slug's own file.
     root.detailCacheFile.setText(JSON.stringify(projected))
+  }
+
+  // ------------------------------------------------------------ evolution
+
+  // Rebound per selection like detailCacheFile, but keyed by evolution-chain
+  // id rather than slug — several forms/stages of the same species share one
+  // chain (Bulbasaur/Ivysaur/Venusaur all fetch and cache the same file
+  // instead of the same chain three times over).
+  property FileView evolutionCacheFile: FileView {
+    watchChanges: false
+    printErrors: false
+    atomicWrites: true
+    onLoaded: root.onEvolutionFileLoaded(text())
+    onLoadFailed: root.onEvolutionFileMissing()
+  }
+
+  property string pendingSpeciesName: ""
+  property int pendingChainId: 0
+  // Which slug's request is currently bound to evolutionCacheFile — checked
+  // by its onLoaded/onLoadFailed, since those can resolve after the user has
+  // already navigated to a different Pokemon (same race pendingSlug guards
+  // against elsewhere in this file, just at this file's own async boundary).
+  property string evolutionRequestSlug: ""
+
+  // The species lookup itself is never cached (small, only ever used to
+  // find the chain id); only the chain response is cached, and by chain id.
+  function fetchEvolution(slug, speciesName) {
+    root.pendingSpeciesName = speciesName
+    PokeApi.fetchSpecies(speciesName, function(species) {
+      if (slug !== root.pendingSlug) return
+      root.pendingChainId = Evolution.chainIdFromUrl(
+        species.evolution_chain ? species.evolution_chain.url : "")
+      root.evolutionRequestSlug = slug
+      root.evolutionCacheFile.path = root.evolutionCacheDir + "/" + root.pendingChainId + ".json"
+      root.evolutionCacheFile.reload()
+    }, function(message) {
+      if (slug !== root.pendingSlug) return
+      root.evolutionPhase = "error"
+    })
+  }
+
+  function onEvolutionFileLoaded(text) {
+    if (root.evolutionRequestSlug !== root.pendingSlug) return
+    var parsed = null
+    try { parsed = JSON.parse(text) } catch (err) { parsed = null }
+    if (!parsed || !CacheValidation.isValidEvolutionShape(parsed)) {
+      root.fetchEvolutionChainFromNetwork()
+      return
+    }
+    root.applyEvolutionChain(parsed)
+  }
+
+  function onEvolutionFileMissing() {
+    if (root.evolutionRequestSlug !== root.pendingSlug) return
+    root.fetchEvolutionChainFromNetwork()
+  }
+
+  function fetchEvolutionChainFromNetwork() {
+    var slug = root.evolutionRequestSlug
+    PokeApi.fetchEvolutionChain(root.pendingChainId, function(raw) {
+      if (slug !== root.pendingSlug) return
+      root.evolutionCacheFile.setText(JSON.stringify(raw))
+      root.applyEvolutionChain(raw)
+    }, function(message) {
+      if (slug !== root.pendingSlug) return
+      root.evolutionPhase = "error"
+    })
+  }
+
+  function applyEvolutionChain(chainJson) {
+    root.evolutionNeighbors = Evolution.neighborsFor(chainJson.chain, root.pendingSpeciesName)
+    root.evolutionPhase = "ready"
   }
 
   // ------------------------------------------------------------ artwork
@@ -288,7 +372,7 @@ QtObject {
   // FileView does not create missing parent directories; this also covers
   // cacheDir itself since mkdir -p creates every missing ancestor.
   property Process cacheDirProcess: Process {
-    command: ["mkdir", "-p", root.cacheDir + "/pokemon"]
+    command: ["mkdir", "-p", root.cacheDir + "/pokemon", root.evolutionCacheDir]
   }
 
   Component.onCompleted: root.cacheDirProcess.running = true

@@ -1,0 +1,39 @@
+{
+  "chain": {
+    "species": {
+      "name": "charmander"
+    },
+    "evolution_details": [],
+    "evolves_to": [
+      {
+        "species": {
+          "name": "charmeleon"
+        },
+        "evolution_details": [
+          {
+            "trigger": {
+              "name": "level-up"
+            },
+            "min_level": 16
+          }
+        ],
+        "evolves_to": [
+          {
+            "species": {
+              "name": "charizard"
+            },
+            "evolution_details": [
+              {
+                "trigger": {
+                  "name": "level-up"
+                },
+                "min_level": 36
+              }
+            ],
+            "evolves_to": []
+          }
+        ]
+      }
+    ]
+  }
+}

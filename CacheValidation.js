@@ -42,6 +42,7 @@ function isValidDetailShape(parsed) {
   if (!isPlainObject(parsed)) return false
   if (typeof parsed.id !== "number") return false
   if (typeof parsed.label !== "string") return false
+  if (typeof parsed.speciesName !== "string") return false
   if (typeof parsed.dexNumberPadded !== "string") return false
   if (typeof parsed.spriteUrl !== "string") return false
   if (typeof parsed.heightM !== "number") return false
@@ -51,6 +52,13 @@ function isValidDetailShape(parsed) {
   if (!Array.isArray(parsed.stats)) return false
   if (!isPlainObject(parsed.weaknesses)) return false
   return true
+}
+
+function isValidEvolutionShape(parsed) {
+  if (!isPlainObject(parsed)) return false
+  if (!isPlainObject(parsed.chain)) return false
+  if (!isPlainObject(parsed.chain.species) || typeof parsed.chain.species.name !== "string") return false
+  return Array.isArray(parsed.chain.evolves_to)
 }
 
 function isValidRecentsShape(parsed) {

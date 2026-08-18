@@ -15,6 +15,11 @@ Item {
   readonly property var detail: dex ? dex.detail : null
   readonly property string phase: dex ? dex.detailPhase : "idle"
 
+  readonly property string evolutionPhase: dex ? dex.evolutionPhase : "idle"
+  readonly property var evolutionNeighbors: dex ? dex.evolutionNeighbors : null
+  readonly property bool hasEvolutionContent: !!(evolutionNeighbors
+    && (evolutionNeighbors.from || evolutionNeighbors.to.length))
+
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property string family: bar ? bar.fontFamily : Style.font.family
   readonly property color dim: Qt.darker(fg, 1.4)
@@ -164,6 +169,69 @@ Item {
               ? view.detail.heightM.toFixed(1) + " m · " + view.detail.weightKg.toFixed(1) + " kg"
               : ""
             color: view.dim
+            font.family: view.family
+            font.pixelSize: Style.font.caption
+          }
+        }
+      }
+
+      // ---------- evolution: immediate neighbors only, not the full chain ----------
+      Column {
+        width: parent.width
+        spacing: Style.spacing.xs
+        visible: view.evolutionPhase !== "idle"
+          && (view.evolutionPhase !== "ready" || view.hasEvolutionContent)
+
+        PanelSectionHeader {
+          width: parent.width
+          text: "EVOLUTION"
+          foreground: view.fg
+          fontFamily: view.family
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          visible: view.evolutionPhase === "loading"
+          text: "Loading…"
+          color: view.dim
+          font.family: view.family
+          font.pixelSize: Style.font.caption
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          wrapMode: Text.WordWrap
+          visible: view.evolutionPhase === "error"
+          text: "Couldn't load evolution data."
+          color: view.dim
+          font.family: view.family
+          font.pixelSize: Style.font.caption
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          visible: view.evolutionPhase === "ready" && view.evolutionNeighbors
+            && !!view.evolutionNeighbors.from
+          text: view.evolutionNeighbors && view.evolutionNeighbors.from
+            ? "Evolves from " + view.evolutionNeighbors.from.label : ""
+          color: view.fg
+          font.family: view.family
+          font.pixelSize: Style.font.caption
+        }
+
+        Repeater {
+          model: (view.evolutionPhase === "ready" && view.evolutionNeighbors)
+            ? view.evolutionNeighbors.to : []
+          delegate: Text {
+            required property var modelData
+            textFormat: Text.PlainText
+            width: parent.width
+            wrapMode: Text.WordWrap
+            text: "Evolves into " + modelData.label + " (" + modelData.condition + ")"
+            color: view.fg
             font.family: view.family
             font.pixelSize: Style.font.caption
           }

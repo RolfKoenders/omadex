@@ -70,19 +70,35 @@ section("isValidIndexShape", () => {
 
 section("isValidDetailShape", () => {
   const valid = {
-    id: 25, label: "Pikachu", dexNumberPadded: "#025", spriteUrl: "https://example/x.png",
+    id: 25, label: "Pikachu", speciesName: "pikachu", dexNumberPadded: "#025",
+    spriteUrl: "https://example/x.png",
     heightM: 0.4, weightKg: 6, types: ["electric"],
     abilities: [{ label: "Static", hidden: false }],
     stats: [{ key: "hp", label: "HP", value: 35 }],
     weaknesses: { x4: [], x2: ["ground"], x0_5: [], x0_25: [], immune: [] }
   };
   eq("well-formed detail accepted", CacheValidation.isValidDetailShape(valid), true);
+  eq("missing speciesName rejected",
+     CacheValidation.isValidDetailShape(Object.assign({}, valid, { speciesName: undefined })), false);
   eq("empty types array rejected (every Pokemon has at least one type)",
      CacheValidation.isValidDetailShape(Object.assign({}, valid, { types: [] })), false);
   eq("wrong type for heightM rejected",
      CacheValidation.isValidDetailShape(Object.assign({}, valid, { heightM: "0.4" })), false);
   eq("missing weaknesses rejected",
      CacheValidation.isValidDetailShape(Object.assign({}, valid, { weaknesses: undefined })), false);
+});
+
+section("isValidEvolutionShape", () => {
+  eq("well-formed linear fixture accepted",
+     CacheValidation.isValidEvolutionShape(fixture("evolution-chain-linear.json")), true);
+  eq("well-formed branching fixture accepted",
+     CacheValidation.isValidEvolutionShape(fixture("evolution-chain-branching.json")), true);
+  eq("missing chain rejected", CacheValidation.isValidEvolutionShape({}), false);
+  eq("chain missing species rejected",
+     CacheValidation.isValidEvolutionShape({ chain: { evolves_to: [] } }), false);
+  eq("chain missing evolves_to array rejected",
+     CacheValidation.isValidEvolutionShape({ chain: { species: { name: "eevee" } } }), false);
+  eq("not an object rejected", CacheValidation.isValidEvolutionShape("nope"), false);
 });
 
 section("isValidRecentsShape", () => {

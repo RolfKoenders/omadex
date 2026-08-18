@@ -88,45 +88,67 @@ section("describeTrigger: exotic triggers fall back to a humanized name", () => 
 const linear = fixture("evolution-chain-linear.json").chain;
 const branching = fixture("evolution-chain-branching.json").chain;
 
+// A small curated-index-shaped fixture (IndexSearch.curateIndex's output
+// shape), covering only the species these tests need.
+const cachedEntries = [
+  { name: "charmander", label: "Charmander", number: 4, spriteId: 4 },
+  { name: "charmeleon", label: "Charmeleon", number: 5, spriteId: 5 },
+  { name: "charizard", label: "Charizard", number: 6, spriteId: 6 },
+  { name: "eevee", label: "Eevee", number: 133, spriteId: 133 },
+  { name: "vaporeon", label: "Vaporeon", number: 134, spriteId: 134 }
+];
+
 section("neighborsFor: root of a linear chain has no 'from'", () => {
-  const result = Evolution.neighborsFor(linear, "charmander");
+  const result = Evolution.neighborsFor(linear, "charmander", cachedEntries);
   eq("no from", result.from, null);
-  eq("one evolution, with a level condition", result.to, [
-    { name: "charmeleon", label: "Charmeleon", condition: "Level 16" }
+  eq("one evolution, with a level condition and a resolved sprite", result.to, [
+    { name: "charmeleon", label: "Charmeleon", spriteId: 5, condition: "Level 16" }
   ]);
 });
 
 section("neighborsFor: middle of a linear chain has both from and to", () => {
-  const result = Evolution.neighborsFor(linear, "charmeleon");
-  eq("from charmander", result.from, { name: "charmander", label: "Charmander" });
+  const result = Evolution.neighborsFor(linear, "charmeleon", cachedEntries);
+  eq("from charmander, with the condition that led here", result.from,
+     { name: "charmander", label: "Charmander", spriteId: 4, condition: "Level 16" });
   eq("to charizard at level 36", result.to, [
-    { name: "charizard", label: "Charizard", condition: "Level 36" }
+    { name: "charizard", label: "Charizard", spriteId: 6, condition: "Level 36" }
   ]);
 });
 
 section("neighborsFor: leaf of a linear chain has from and empty to", () => {
-  const result = Evolution.neighborsFor(linear, "charizard");
-  eq("from charmeleon", result.from, { name: "charmeleon", label: "Charmeleon" });
+  const result = Evolution.neighborsFor(linear, "charizard", cachedEntries);
+  eq("from charmeleon, with the condition that led here", result.from,
+     { name: "charmeleon", label: "Charmeleon", spriteId: 5, condition: "Level 36" });
   eq("no further evolutions", result.to, []);
 });
 
 section("neighborsFor: species not present in the chain returns null", () => {
-  eq("not found", Evolution.neighborsFor(linear, "bulbasaur"), null);
+  eq("not found", Evolution.neighborsFor(linear, "bulbasaur", cachedEntries), null);
+});
+
+section("neighborsFor: a name missing from cachedEntries falls back to spriteId 0", () => {
+  const result = Evolution.neighborsFor(linear, "charmander", []);
+  eq("no cached entries at all, still resolves the chain, just no sprite",
+     result.to[0].spriteId, 0);
 });
 
 section("neighborsFor: a branching root lists every branch", () => {
-  const result = Evolution.neighborsFor(branching, "eevee");
+  const result = Evolution.neighborsFor(branching, "eevee", cachedEntries);
   eq("no from (eevee is the root)", result.from, null);
   eq("eight branches", result.to.length, 8);
-  eq("vaporeon via water stone",
-     result.to.find((e) => e.name === "vaporeon").condition, "Water Stone");
-  eq("espeon via daytime level-up (time_of_day takes precedence over min_happiness)",
-     result.to.find((e) => e.name === "espeon").condition, "Level up, day");
+  eq("vaporeon via water stone, with a resolved sprite",
+     result.to.find((e) => e.name === "vaporeon"),
+     { name: "vaporeon", label: "Vaporeon", spriteId: 134, condition: "Water Stone" });
+  eq("espeon via daytime level-up (time_of_day takes precedence over min_happiness), " +
+     "no entry in cachedEntries so spriteId falls back to 0",
+     result.to.find((e) => e.name === "espeon"),
+     { name: "espeon", label: "Espeon", spriteId: 0, condition: "Level up, day" });
 });
 
 section("neighborsFor: a branch's own leaf has no to", () => {
-  const result = Evolution.neighborsFor(branching, "vaporeon");
-  eq("from eevee", result.from, { name: "eevee", label: "Eevee" });
+  const result = Evolution.neighborsFor(branching, "vaporeon", cachedEntries);
+  eq("from eevee, with the condition that led here", result.from,
+     { name: "eevee", label: "Eevee", spriteId: 133, condition: "Water Stone" });
   eq("no further evolutions", result.to, []);
 });
 

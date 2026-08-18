@@ -46,11 +46,23 @@ function describeTrigger(detail) {
   return titleCase(trigger || "other")
 }
 
+// spriteId for a species name, resolved against the curated index (the same
+// shape IndexSearch.curateIndex produces). Defensive: evolution targets
+// should always be real curated-index entries, but never assume — falls
+// back to 0 (EvolutionNode.qml treats that as "no sprite available").
+function spriteIdFor(name, cachedEntries) {
+  var entries = Array.isArray(cachedEntries) ? cachedEntries : []
+  for (var i = 0; i < entries.length; i++) {
+    if (entries[i].name === name) return entries[i].spriteId
+  }
+  return 0
+}
+
 // Finds speciesName in chain and returns its immediate neighbors only, not
 // the full multi-stage/branching tree — kept deliberately compact for the
 // popup's tight vertical space. A branch with more than one evolution_details
 // entry (different version groups reaching the same species) uses the first.
-function neighborsFor(chain, speciesName) {
+function neighborsFor(chain, speciesName, cachedEntries) {
   function walk(node, parentName) {
     if (node.species.name === speciesName) {
       var to = []
@@ -59,11 +71,19 @@ function neighborsFor(chain, speciesName) {
         to.push({
           name: child.species.name,
           label: titleCase(child.species.name),
+          spriteId: spriteIdFor(child.species.name, cachedEntries),
           condition: describeTrigger(child.evolution_details[0])
         })
       }
       return {
-        from: parentName ? { name: parentName, label: titleCase(parentName) } : null,
+        // node.evolution_details (not the parent's) describes how this
+        // node itself evolved from its parent — the label for the from arrow.
+        from: parentName ? {
+          name: parentName,
+          label: titleCase(parentName),
+          spriteId: spriteIdFor(parentName, cachedEntries),
+          condition: describeTrigger(node.evolution_details[0])
+        } : null,
         to: to
       }
     }

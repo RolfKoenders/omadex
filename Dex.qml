@@ -350,7 +350,8 @@ QtObject {
   }
 
   function applyEvolutionChain(chainJson) {
-    root.evolutionNeighbors = Evolution.neighborsFor(chainJson.chain, root.pendingSpeciesName)
+    root.evolutionNeighbors = Evolution.neighborsFor(
+      chainJson.chain, root.pendingSpeciesName, root.cachedEntries)
     root.evolutionPhase = "ready"
   }
 

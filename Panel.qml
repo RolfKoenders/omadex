@@ -60,6 +60,13 @@ Panel {
     if (result) dex.selectPokemon(result.name)
   }
 
+  // Clicking a from/into evolution link routes through the search field
+  // itself (same as typing), so query, cursor, and recentsForced all reset
+  // exactly as they already do for manual typing — no duplicate logic.
+  function jumpToEvolution(label) {
+    searchField.text = label
+  }
+
   // First Escape clears the filter, second Escape closes the popup.
   function handleEscape() {
     if (dex.query.length) dex.query = ""
@@ -281,6 +288,7 @@ Panel {
                   root.cursorIndex = index
                 }
                 onExpandToggled: root.dex.selectPokemon(modelData.name)
+                onEvolutionJumpRequested: function(label) { root.jumpToEvolution(label) }
               }
             }
           }

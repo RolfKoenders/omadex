@@ -38,12 +38,12 @@ jobs:
           # omarchy CLI exist on a stock GitHub runner, so both steps below
           # stay conditional on availability.
           if command -v qmlformat >/dev/null; then
-            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml; do
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml EvolutionNode.qml; do
               qmlformat "$file" >/dev/null
             done
           fi
           if command -v qmllint >/dev/null; then
-            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml; do
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml EvolutionNode.qml; do
               qmllint -I "$OMARCHY_PATH/shell" "$file"
             done
           fi

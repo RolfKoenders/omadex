@@ -12,6 +12,8 @@ Item {
   property var dex: null
   property QtObject bar: null
 
+  signal evolutionJumpRequested(string label)
+
   readonly property var detail: dex ? dex.detail : null
   readonly property string phase: dex ? dex.detailPhase : "idle"
 
@@ -210,30 +212,77 @@ Item {
           font.pixelSize: Style.font.caption
         }
 
-        Text {
-          textFormat: Text.PlainText
-          width: parent.width
+        Row {
+          spacing: Style.spacing.xs
           visible: view.evolutionPhase === "ready" && view.evolutionNeighbors
-            && !!view.evolutionNeighbors.from
-          text: view.evolutionNeighbors && view.evolutionNeighbors.from
-            ? "Evolves from " + view.evolutionNeighbors.from.label : ""
-          color: view.fg
-          font.family: view.family
-          font.pixelSize: Style.font.caption
+
+          EvolutionNode {
+            visible: !!(view.evolutionNeighbors && view.evolutionNeighbors.from)
+            label: view.evolutionNeighbors && view.evolutionNeighbors.from
+              ? view.evolutionNeighbors.from.label : ""
+            spriteId: view.evolutionNeighbors && view.evolutionNeighbors.from
+              ? view.evolutionNeighbors.from.spriteId : 0
+            condition: view.evolutionNeighbors && view.evolutionNeighbors.from
+              ? view.evolutionNeighbors.from.condition : ""
+            clickable: true
+            showArrow: false
+            fg: view.fg
+            family: view.family
+            onActivated: view.evolutionJumpRequested(label)
+          }
+
+          EvolutionNode {
+            label: view.detail ? view.detail.label : ""
+            // detail.id is the raw per-form id from /pokemon/{id-or-name},
+            // the same numeric id IndexSearch.js's spriteId field is derived
+            // from — no extra index lookup needed for the current Pokemon.
+            spriteId: view.detail ? view.detail.id : 0
+            accent: true
+            accentColor: view.primaryTypeColor
+            clickable: false
+            showArrow: !!(view.evolutionNeighbors && view.evolutionNeighbors.from)
+            fg: view.fg
+            family: view.family
+          }
+
+          EvolutionNode {
+            visible: !!(view.evolutionNeighbors && view.evolutionNeighbors.to.length === 1)
+            label: (view.evolutionNeighbors && view.evolutionNeighbors.to.length === 1)
+              ? view.evolutionNeighbors.to[0].label : ""
+            spriteId: (view.evolutionNeighbors && view.evolutionNeighbors.to.length === 1)
+              ? view.evolutionNeighbors.to[0].spriteId : 0
+            condition: (view.evolutionNeighbors && view.evolutionNeighbors.to.length === 1)
+              ? view.evolutionNeighbors.to[0].condition : ""
+            clickable: true
+            showArrow: true
+            fg: view.fg
+            family: view.family
+            onActivated: view.evolutionJumpRequested(label)
+          }
         }
 
-        Repeater {
-          model: (view.evolutionPhase === "ready" && view.evolutionNeighbors)
-            ? view.evolutionNeighbors.to : []
-          delegate: Text {
-            required property var modelData
-            textFormat: Text.PlainText
-            width: parent.width
-            wrapMode: Text.WordWrap
-            text: "Evolves into " + modelData.label + " (" + modelData.condition + ")"
-            color: view.fg
-            font.family: view.family
-            font.pixelSize: Style.font.caption
+        // Branching chains (more than one "to") wrap below the top strip
+        // instead of squeezing into one line, same pattern the weakness
+        // chips already use for their own overflow.
+        Flow {
+          width: parent.width
+          spacing: Style.spacing.md
+          visible: !!(view.evolutionNeighbors && view.evolutionNeighbors.to.length > 1)
+
+          Repeater {
+            model: (view.evolutionPhase === "ready" && view.evolutionNeighbors
+              && view.evolutionNeighbors.to.length > 1) ? view.evolutionNeighbors.to : []
+            delegate: EvolutionNode {
+              required property var modelData
+              label: modelData.label
+              spriteId: modelData.spriteId
+              condition: modelData.condition
+              clickable: true
+              showArrow: true
+              fg: view.fg
+              family: view.family
+              onActivated: view.evolutionJumpRequested(label)
+            }
           }
         }
       }

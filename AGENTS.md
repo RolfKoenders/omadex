@@ -46,8 +46,11 @@ omarchy restart shell
 - `Panel.qml`: bar button, popup, search field, and keyboard cursor. Owns
   UI/keyboard concerns only.
 - `ResultRow.qml`: one search-result row plus its inline expansion.
-- `DetailView.qml`: stat/type/ability/weakness content for the currently
-  expanded Pokemon.
+- `DetailView.qml`: stat/type/ability/weakness/evolution content for the
+  currently expanded Pokemon.
+- `TypeBadge.qml`, `EvolutionNode.qml`: small reusable presentational
+  pieces, not full rows — a colored type chip and one sprite+label+
+  condition node in an evolution chain strip, respectively.
 - `TypeMatchups.js`, `IndexSearch.js`, `PokemonDetail.js`,
   `CacheValidation.js`, `Recents.js`, `Evolution.js`: pure `.pragma
   library` modules, no QML types, no side effects, no Node-only APIs.

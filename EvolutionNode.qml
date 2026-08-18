@@ -12,6 +12,7 @@ Item {
   id: node
 
   required property string label
+  property string name: ""
   property int spriteId: 0
   property string condition: ""
   property bool accent: false

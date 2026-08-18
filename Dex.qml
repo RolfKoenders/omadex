@@ -75,7 +75,7 @@ QtObject {
 
   // idle | loading | error | ready
   property string evolutionPhase: "idle"
-  property var evolutionNeighbors: null
+  property var evolutionChain: null
 
   function selectPokemon(slug) {
     if (root.expandedSlug === slug) { root.collapse(); return }
@@ -84,7 +84,7 @@ QtObject {
     root.detail = null
     root.detailPhase = "loading"
     root.evolutionPhase = "loading"
-    root.evolutionNeighbors = null
+    root.evolutionChain = null
     root.detailCacheFile.path = root.cacheDir + "/pokemon/" + slug + ".json"
     root.detailCacheFile.reload()
   }
@@ -95,7 +95,7 @@ QtObject {
     root.detailPhase = "idle"
     root.detail = null
     root.evolutionPhase = "idle"
-    root.evolutionNeighbors = null
+    root.evolutionChain = null
   }
 
   // ------------------------------------------------------------ index cache
@@ -350,7 +350,7 @@ QtObject {
   }
 
   function applyEvolutionChain(chainJson) {
-    root.evolutionNeighbors = Evolution.neighborsFor(
+    root.evolutionChain = Evolution.chainFor(
       chainJson.chain, root.pendingSpeciesName, root.cachedEntries)
     root.evolutionPhase = "ready"
   }

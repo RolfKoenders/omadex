@@ -60,11 +60,38 @@ Panel {
     if (result) dex.selectPokemon(result.name)
   }
 
-  // Clicking a from/into evolution link routes through the search field
-  // itself (same as typing), so query, cursor, and recentsForced all reset
-  // exactly as they already do for manual typing — no duplicate logic.
-  function jumpToEvolution(label) {
-    searchField.text = label
+  // Sets dex.query directly, not searchField.text — the field's text is a
+  // live binding to dex.query (`text: root.dex.query` below), and assigning
+  // straight to searchField.text would permanently sever that binding, so
+  // the field would stop clearing on close after the first jump. Setting
+  // dex.query lets the existing binding update the field as a side effect,
+  // which still fires onTextChanged and resets cursor/recentsForced exactly
+  // as manual typing already does. Selection itself happens directly by
+  // slug, not by relying on the new query matching exactly one result and
+  // waiting for Enter.
+  function jumpTo(name, label) {
+    dex.query = label
+    dex.selectPokemon(name)
+  }
+
+  // Left/Right navigate the evolution chain only while something's
+  // expanded (mirrors Up/Down's scroll-vs-navigate split). Left always has
+  // at most one target (a species has exactly one parent); Right does
+  // nothing when there's more than one "to" — no unambiguous next step to
+  // pick, that requires clicking a specific branch.
+  function navigateEvolution(direction) {
+    var chain = dex.evolutionChain
+    if (!chain) return
+    var target = null
+    if (chain.linear) {
+      var idx = chain.currentIndex + direction
+      if (idx >= 0 && idx < chain.path.length) target = chain.path[idx]
+    } else if (direction < 0) {
+      target = chain.from
+    } else if (chain.to.length === 1) {
+      target = chain.to[0]
+    }
+    if (target) root.jumpTo(target.name, target.label)
   }
 
   // First Escape clears the filter, second Escape closes the popup.
@@ -148,9 +175,11 @@ Panel {
       // Qt routes the event to fires, both call the same functions.
       onCloseRequested: root.handleEscape()
       onMoveRequested: function(dx, dy) {
-        if (dy === 0) return
-        if (root.dex.expandedSlug) root.scrollDetail(dy)
-        else root.moveCursor(dy)
+        if (dy !== 0) {
+          if (root.dex.expandedSlug) root.scrollDetail(dy)
+          else root.moveCursor(dy)
+        }
+        if (dx !== 0 && root.dex.expandedSlug) root.navigateEvolution(dx)
       }
       onActivateRequested: root.expandCursor()
       onTabRequested: function(direction) {
@@ -202,6 +231,16 @@ Panel {
             if (root.dex.expandedSlug) root.scrollDetail(-1)
             else root.moveCursor(-1)
             event.accepted = true
+          }
+          // Unlike Up/Down, Left/Right have a real native meaning here
+          // (moving the text cursor), so only take over once something's
+          // expanded — otherwise leave the event unaccepted so editing the
+          // query still works normally.
+          Keys.onLeftPressed: function(event) {
+            if (root.dex.expandedSlug) { root.navigateEvolution(-1); event.accepted = true }
+          }
+          Keys.onRightPressed: function(event) {
+            if (root.dex.expandedSlug) { root.navigateEvolution(1); event.accepted = true }
           }
           Keys.onEscapePressed: function(event) { root.handleEscape(); event.accepted = true }
           // A custom Keys.onReturnPressed here stops QQC2's own accepted()
@@ -288,7 +327,7 @@ Panel {
                   root.cursorIndex = index
                 }
                 onExpandToggled: root.dex.selectPokemon(modelData.name)
-                onEvolutionJumpRequested: function(label) { root.jumpToEvolution(label) }
+                onEvolutionJumpRequested: function(name, label) { root.jumpTo(name, label) }
               }
             }
           }

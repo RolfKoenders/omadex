@@ -95,3 +95,56 @@ function neighborsFor(chain, speciesName, cachedEntries) {
   }
   return walk(chain, null)
 }
+
+// True only if no node anywhere in chain has more than one evolves_to
+// entry — i.e. the whole family is a single path with no branch point,
+// computed once per chain rather than per lookup.
+function isLinear(chain) {
+  if (chain.evolves_to.length > 1) return false
+  for (var i = 0; i < chain.evolves_to.length; i++) {
+    if (!isLinear(chain.evolves_to[i])) return false
+  }
+  return true
+}
+
+// Walks a (by definition, for a linear chain) single-path chain root to
+// leaf. condition on entry i (i>0) is that node's own evolution_details —
+// the transition into it, not out of it. The root has no condition.
+function flattenLinear(chain, cachedEntries) {
+  var path = []
+  var node = chain
+  var condition = ""
+  while (node) {
+    path.push({
+      name: node.species.name,
+      label: titleCase(node.species.name),
+      spriteId: spriteIdFor(node.species.name, cachedEntries),
+      condition: condition
+    })
+    if (node.evolves_to.length === 0) break
+    var child = node.evolves_to[0]
+    condition = describeTrigger(child.evolution_details[0])
+    node = child
+  }
+  return path
+}
+
+// Entry point Dex.qml calls. Linear families (the common case, at most 3
+// stages in practice) get their full chain rendered as one strip; branching
+// families (Eevee-shaped) keep the immediate-neighbors-only treatment,
+// since fully flattening a tree with multiple branch points doesn't fit a
+// single horizontal strip.
+function chainFor(chain, speciesName, cachedEntries) {
+  if (isLinear(chain)) {
+    var path = flattenLinear(chain, cachedEntries)
+    var currentIndex = -1
+    for (var i = 0; i < path.length; i++) {
+      if (path[i].name === speciesName) { currentIndex = i; break }
+    }
+    if (currentIndex === -1) return null
+    return { linear: true, path: path, currentIndex: currentIndex }
+  }
+  var neighbors = neighborsFor(chain, speciesName, cachedEntries)
+  if (!neighbors) return null
+  return { linear: false, from: neighbors.from, to: neighbors.to }
+}

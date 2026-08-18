@@ -152,6 +152,41 @@ section("neighborsFor: a branch's own leaf has no to", () => {
   eq("no further evolutions", result.to, []);
 });
 
+section("isLinear", () => {
+  eq("the charmander line has no branch point", Evolution.isLinear(linear), true);
+  eq("eevee's chain branches at the root", Evolution.isLinear(branching), false);
+});
+
+section("chainFor: linear chain, root", () => {
+  const result = Evolution.chainFor(linear, "charmander", cachedEntries);
+  eq("linear flag set", result.linear, true);
+  eq("full 3-stage path with correct per-entry conditions and resolved sprites", result.path, [
+    { name: "charmander", label: "Charmander", spriteId: 4, condition: "" },
+    { name: "charmeleon", label: "Charmeleon", spriteId: 5, condition: "Level 16" },
+    { name: "charizard", label: "Charizard", spriteId: 6, condition: "Level 36" }
+  ]);
+  eq("currentIndex points at charmander", result.currentIndex, 0);
+});
+
+section("chainFor: linear chain, middle and leaf just move currentIndex", () => {
+  eq("charmeleon is index 1", Evolution.chainFor(linear, "charmeleon", cachedEntries).currentIndex, 1);
+  eq("charizard is index 2", Evolution.chainFor(linear, "charizard", cachedEntries).currentIndex, 2);
+  eq("the path itself is identical regardless of which stage is being viewed",
+     Evolution.chainFor(linear, "charmeleon", cachedEntries).path,
+     Evolution.chainFor(linear, "charizard", cachedEntries).path);
+});
+
+section("chainFor: species not present in a linear chain returns null", () => {
+  eq("not found", Evolution.chainFor(linear, "bulbasaur", cachedEntries), null);
+});
+
+section("chainFor: branching chain falls back to the immediate-neighbors shape, unchanged", () => {
+  const result = Evolution.chainFor(branching, "eevee", cachedEntries);
+  eq("linear flag unset", result.linear, false);
+  eq("matches neighborsFor's own output exactly",
+     result, Object.assign({ linear: false }, Evolution.neighborsFor(branching, "eevee", cachedEntries)));
+});
+
 console.log();
 if (failures) {
   console.log(`FAILED: ${failures} of ${checks} checks`);

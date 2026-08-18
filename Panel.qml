@@ -234,13 +234,18 @@ Panel {
           }
           // Unlike Up/Down, Left/Right have a real native meaning here
           // (moving the text cursor), so only take over once something's
-          // expanded — otherwise leave the event unaccepted so editing the
-          // query still works normally.
+          // expanded. Keys.onXxxPressed defaults event.accepted to true the
+          // moment a handler exists at all, even one that never touches it —
+          // simply not setting it here still silently blocks the field's
+          // own cursor movement, confirmed live. Must explicitly set it to
+          // false to actually let the event fall through to native handling.
           Keys.onLeftPressed: function(event) {
             if (root.dex.expandedSlug) { root.navigateEvolution(-1); event.accepted = true }
+            else event.accepted = false
           }
           Keys.onRightPressed: function(event) {
             if (root.dex.expandedSlug) { root.navigateEvolution(1); event.accepted = true }
+            else event.accepted = false
           }
           Keys.onEscapePressed: function(event) { root.handleEscape(); event.accepted = true }
           // A custom Keys.onReturnPressed here stops QQC2's own accepted()

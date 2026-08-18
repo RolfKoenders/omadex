@@ -85,6 +85,17 @@ section("isValidDetailShape", () => {
      CacheValidation.isValidDetailShape(Object.assign({}, valid, { weaknesses: undefined })), false);
 });
 
+section("isValidRecentsShape", () => {
+  eq("well-formed slugs list accepted",
+     CacheValidation.isValidRecentsShape({ slugs: ["pikachu", "charizard"] }), true);
+  eq("empty slugs list accepted (first run, nothing viewed yet)",
+     CacheValidation.isValidRecentsShape({ slugs: [] }), true);
+  eq("non-string entry rejected",
+     CacheValidation.isValidRecentsShape({ slugs: ["pikachu", 25] }), false);
+  eq("missing slugs rejected", CacheValidation.isValidRecentsShape({}), false);
+  eq("not an object rejected", CacheValidation.isValidRecentsShape("nope"), false);
+});
+
 section("isValidTypeChartShape", () => {
   const valid = { electric: {
     double_damage_from: ["ground"], half_damage_from: ["electric"], no_damage_from: []

@@ -6,6 +6,7 @@ import "PokemonDetail.js" as PokemonDetail
 import "TypeMatchups.js" as TypeMatchups
 import "CacheValidation.js" as CacheValidation
 import "PokeApi.js" as PokeApi
+import "Recents.js" as Recents
 
 // Owner of the search index, type chart, and per-Pokemon detail: cache,
 // fetch, and derived state. Panel.qml owns keyboard/UI concerns only.
@@ -16,6 +17,7 @@ QtObject {
   readonly property string cacheDir: home + "/.config/omarchy/quickdex/cache"
   readonly property string indexPath: cacheDir + "/index.json"
   readonly property string typesPath: cacheDir + "/types.json"
+  readonly property string recentsPath: cacheDir + "/recents.json"
 
   // ------------------------------------------------------------ search
 
@@ -26,6 +28,35 @@ QtObject {
 
   readonly property var results: root.indexPhase === "ready"
     ? IndexSearch.filterIndex(root.cachedEntries, root.query) : []
+
+  // ------------------------------------------------------------ recents
+
+  property var recentSlugs: []
+
+  readonly property var recentResults: Recents.resolveEntries(root.recentSlugs, root.cachedEntries)
+
+  function markViewed(slug) {
+    root.recentSlugs = Recents.bump(root.recentSlugs, slug)
+    root.recentsFile.setText(JSON.stringify({ slugs: root.recentSlugs }))
+  }
+
+  property FileView recentsFile: FileView {
+    path: root.recentsPath
+    watchChanges: false
+    printErrors: false
+    atomicWrites: true
+    onLoaded: root.onRecentsFileLoaded(text())
+    // A missing file on first run is normal, not an error — nothing to do.
+    onLoadFailed: {}
+  }
+
+  function onRecentsFileLoaded(text) {
+    var parsed = null
+    try { parsed = JSON.parse(text) } catch (err) { parsed = null }
+    if (parsed && CacheValidation.isValidRecentsShape(parsed)) {
+      root.recentSlugs = parsed.slugs
+    }
+  }
 
   // ------------------------------------------------------------ detail
 
@@ -203,6 +234,7 @@ QtObject {
     }
     root.detail = parsed
     root.detailPhase = "ready"
+    root.markViewed(slug)
     // Loaded from disk: artwork was already attempted on the original fetch.
   }
 
@@ -222,6 +254,7 @@ QtObject {
         var projected = PokemonDetail.projectDetail(raw, root.typeChart, TypeMatchups)
         root.detail = projected
         root.detailPhase = "ready"
+        root.markViewed(slug)
         root.writeDetailCache(slug, projected)
         root.downloadArtwork(slug, projected.spriteUrl)
       })

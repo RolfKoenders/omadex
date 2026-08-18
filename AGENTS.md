@@ -108,6 +108,16 @@ and `omarchy plugin validate .`. Do not make tests depend on internet
 access. All PokeAPI data used by tests is trimmed-but-real fixtures
 under `tests/fixtures/`, not live requests.
 
+## Releases
+
+Bump `manifest.json`'s `version` (semver: patch for fixes, minor for
+features) as part of any user-facing feature PR. `.github/workflows/release.yml`
+watches pushes to `main` and publishes a tagged GitHub release with
+auto-generated notes the moment it sees a version that isn't tagged yet —
+nothing else to do once the bump lands. This is not a blocking CI check:
+plenty of legitimate PRs (docs, CI, refactors) shouldn't bump the version,
+and the workflow itself no-ops cleanly when nothing changed.
+
 ## Code review rules
 
 - Flag any code path that fetches per-keystroke during search. The index

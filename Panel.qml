@@ -16,11 +16,19 @@ Panel {
   property int cursorIndex: 0
   property bool cursorActive: false
 
-  readonly property int rowCount: dex.results.length
+  // Tab peeks at Recents without losing whatever's typed; typing again (see
+  // searchField.onTextChanged) drops back out. Not a multi-stop cycle, just
+  // a toggle, so Tab and Shift+Tab both flip it the same way.
+  property bool recentsForced: false
+  readonly property bool showRecents: recentsForced || dex.query.length === 0
+  readonly property var activeResults: showRecents ? dex.recentResults : dex.results
+
+  readonly property int rowCount: activeResults.length
 
   onOpenedChanged: if (!opened) {
     cursorActive = false
     cursorIndex = 0
+    recentsForced = false
     dex.query = ""
     dex.collapse()
   }
@@ -33,8 +41,8 @@ Panel {
   }
 
   function currentResult() {
-    if (cursorIndex < 0 || cursorIndex >= dex.results.length) return null
-    return dex.results[cursorIndex]
+    if (cursorIndex < 0 || cursorIndex >= activeResults.length) return null
+    return activeResults[cursorIndex]
   }
 
   // While a row is expanded, Up/Down scroll the popup instead of moving the
@@ -84,8 +92,8 @@ Panel {
       var slug = root.dex.expandedSlug
       if (!flick || !slug) return
       var idx = -1
-      for (var i = 0; i < root.dex.results.length; i++) {
-        if (root.dex.results[i].name === slug) { idx = i; break }
+      for (var i = 0; i < root.activeResults.length; i++) {
+        if (root.activeResults[i].name === slug) { idx = i; break }
       }
       var item = idx >= 0 ? resultRepeater.itemAt(idx) : null
       if (!item) return
@@ -138,6 +146,11 @@ Panel {
         else root.moveCursor(dy)
       }
       onActivateRequested: root.expandCursor()
+      onTabRequested: function(direction) {
+        root.recentsForced = !root.recentsForced
+        root.cursorActive = false
+        root.cursorIndex = 0
+      }
 
       Column {
         id: column
@@ -171,6 +184,7 @@ Panel {
             root.dex.query = text
             root.cursorIndex = 0
             root.cursorActive = false
+            root.recentsForced = false
           }
           Keys.onDownPressed: function(event) {
             if (root.dex.expandedSlug) root.scrollDetail(1)
@@ -203,7 +217,7 @@ Panel {
         Text {
           textFormat: Text.PlainText
           width: parent.width
-          visible: root.dex.indexPhase === "ready"
+          visible: !root.showRecents && root.dex.indexPhase === "ready"
             && root.dex.query.length > 0 && root.dex.results.length === 0
           text: "No matches."
           wrapMode: Text.WordWrap
@@ -223,9 +237,17 @@ Panel {
           font.pixelSize: Style.font.bodySmall
         }
 
+        PanelSectionHeader {
+          width: parent.width
+          visible: root.showRecents && root.activeResults.length > 0
+          text: "RECENT"
+          foreground: root.fg
+          fontFamily: root.family
+        }
+
         ScrollView {
           id: listScroller
-          visible: root.dex.results.length > 0
+          visible: root.activeResults.length > 0
           width: parent.width
           implicitHeight: Math.min(rowsColumn.implicitHeight, Style.space(420))
           clip: true
@@ -238,7 +260,7 @@ Panel {
 
             Repeater {
               id: resultRepeater
-              model: root.dex.results
+              model: root.activeResults
               delegate: ResultRow {
                 // Required properties put this delegate in required-mode,
                 // so index must be declared here or Qt stops injecting it.

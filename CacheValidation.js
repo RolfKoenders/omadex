@@ -53,6 +53,11 @@ function isValidDetailShape(parsed) {
   return true
 }
 
+function isValidRecentsShape(parsed) {
+  if (!isPlainObject(parsed)) return false
+  return isStringArray(parsed.slugs)
+}
+
 function isValidTypeChartShape(parsed) {
   if (!isPlainObject(parsed)) return false
   var typeNames = Object.keys(parsed)

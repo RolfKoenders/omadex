@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.rolfkoenders.quickdex",
   "name": "Quickdex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Rolf Koenders",
   "license": "MIT",
   "description": "Search any Pokémon for stats, types, and weaknesses, right from the bar.",

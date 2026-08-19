@@ -20,6 +20,7 @@ CursorSurface {
 
   signal cursorRequested()
   signal expandToggled()
+  signal evolutionJumpRequested(string name, string label)
 
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property string family: bar ? bar.fontFamily : Style.font.family
@@ -112,6 +113,7 @@ CursorSurface {
       sourceComponent: DetailView {
         dex: row.dex
         bar: row.bar
+        onEvolutionJumpRequested: function(name, label) { row.evolutionJumpRequested(name, label) }
       }
     }
   }

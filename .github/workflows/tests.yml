@@ -27,6 +27,7 @@ jobs:
           node tests/test_pokemon_detail.js
           node tests/test_cache_validation.js
           node tests/test_recents.js
+          node tests/test_evolution.js
 
       - name: QML house style (fonts, palette, text format)
         run: python3 tests/test_qml_style.py
@@ -37,12 +38,12 @@ jobs:
           # omarchy CLI exist on a stock GitHub runner, so both steps below
           # stay conditional on availability.
           if command -v qmlformat >/dev/null; then
-            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml; do
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml EvolutionNode.qml; do
               qmlformat "$file" >/dev/null
             done
           fi
           if command -v qmllint >/dev/null; then
-            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml; do
+            for file in Dex.qml Panel.qml ResultRow.qml DetailView.qml TypeBadge.qml EvolutionNode.qml; do
               qmllint -I "$OMARCHY_PATH/shell" "$file"
             done
           fi

@@ -12,8 +12,16 @@ Item {
   property var dex: null
   property QtObject bar: null
 
+  signal evolutionJumpRequested(string name, string label)
+
   readonly property var detail: dex ? dex.detail : null
   readonly property string phase: dex ? dex.detailPhase : "idle"
+
+  readonly property string evolutionPhase: dex ? dex.evolutionPhase : "idle"
+  readonly property var evolutionChain: dex ? dex.evolutionChain : null
+  readonly property bool hasEvolutionContent: !!(evolutionChain && (evolutionChain.linear
+    ? evolutionChain.path.length > 1
+    : (evolutionChain.from || evolutionChain.to.length)))
 
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property string family: bar ? bar.fontFamily : Style.font.family
@@ -166,6 +174,163 @@ Item {
             color: view.dim
             font.family: view.family
             font.pixelSize: Style.font.caption
+          }
+        }
+      }
+
+      // ---------- evolution: full chain when linear, immediate neighbors
+      // (plus a wrapping grid) when it branches ----------
+      Column {
+        width: parent.width
+        spacing: Style.spacing.xs
+        visible: view.evolutionPhase !== "idle"
+          && (view.evolutionPhase !== "ready" || view.hasEvolutionContent)
+
+        PanelSectionHeader {
+          width: parent.width
+          text: "EVOLUTION"
+          foreground: view.fg
+          fontFamily: view.family
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          visible: view.evolutionPhase === "loading"
+          text: "Loading…"
+          color: view.dim
+          font.family: view.family
+          font.pixelSize: Style.font.caption
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          wrapMode: Text.WordWrap
+          visible: view.evolutionPhase === "error"
+          text: "Couldn't load evolution data."
+          color: view.dim
+          font.family: view.family
+          font.pixelSize: Style.font.caption
+        }
+
+        // Linear chains: every stage in one strip, arrow-and-accent driven
+        // purely by index vs currentIndex — no from/current/to special
+        // casing needed since the whole family is always shown.
+        Row {
+          width: parent.width
+          anchors.horizontalCenter: parent.horizontalCenter
+          spacing: Style.spacing.xs
+          visible: view.evolutionPhase === "ready" && view.evolutionChain
+            && view.evolutionChain.linear
+
+          Repeater {
+            model: (view.evolutionPhase === "ready" && view.evolutionChain
+              && view.evolutionChain.linear) ? view.evolutionChain.path : []
+            delegate: EvolutionNode {
+              required property var modelData
+              required property int index
+              name: modelData.name
+              label: modelData.label
+              spriteId: modelData.spriteId
+              condition: modelData.condition
+              accent: index === view.evolutionChain.currentIndex
+              accentColor: view.primaryTypeColor
+              clickable: index !== view.evolutionChain.currentIndex
+              showArrow: index > 0
+              fg: view.fg
+              family: view.family
+              onActivated: view.evolutionJumpRequested(name, label)
+            }
+          }
+        }
+
+        // Branching chains: current (plus from, plus a single inline to)
+        // stays a fixed top strip; more than one to wraps below instead of
+        // trying to flatten the whole tree onto one line.
+        Row {
+          anchors.horizontalCenter: parent.horizontalCenter
+          spacing: Style.spacing.xs
+          visible: view.evolutionPhase === "ready" && view.evolutionChain
+            && !view.evolutionChain.linear
+
+          EvolutionNode {
+            visible: !!(view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.from)
+            name: (view.evolutionChain && view.evolutionChain.from)
+              ? view.evolutionChain.from.name : ""
+            label: (view.evolutionChain && view.evolutionChain.from)
+              ? view.evolutionChain.from.label : ""
+            spriteId: (view.evolutionChain && view.evolutionChain.from)
+              ? view.evolutionChain.from.spriteId : 0
+            condition: (view.evolutionChain && view.evolutionChain.from)
+              ? view.evolutionChain.from.condition : ""
+            clickable: true
+            showArrow: false
+            fg: view.fg
+            family: view.family
+            onActivated: view.evolutionJumpRequested(name, label)
+          }
+
+          EvolutionNode {
+            label: view.detail ? view.detail.label : ""
+            // detail.id is the raw per-form id from /pokemon/{id-or-name},
+            // the same numeric id IndexSearch.js's spriteId field is derived
+            // from — no extra index lookup needed for the current Pokemon.
+            spriteId: view.detail ? view.detail.id : 0
+            accent: true
+            accentColor: view.primaryTypeColor
+            clickable: false
+            showArrow: !!(view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.from)
+            fg: view.fg
+            family: view.family
+          }
+
+          EvolutionNode {
+            visible: !!(view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.to.length === 1)
+            name: (view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.to.length === 1) ? view.evolutionChain.to[0].name : ""
+            label: (view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.to.length === 1) ? view.evolutionChain.to[0].label : ""
+            spriteId: (view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.to.length === 1) ? view.evolutionChain.to[0].spriteId : 0
+            condition: (view.evolutionChain && !view.evolutionChain.linear
+              && view.evolutionChain.to.length === 1) ? view.evolutionChain.to[0].condition : ""
+            clickable: true
+            showArrow: true
+            fg: view.fg
+            family: view.family
+            onActivated: view.evolutionJumpRequested(name, label)
+          }
+        }
+
+        // Branching chains with more than one "to" wrap below the top
+        // strip instead of squeezing into one line, same pattern the
+        // weakness chips already use for their own overflow.
+        Flow {
+          width: parent.width
+          spacing: Style.spacing.md
+          visible: !!(view.evolutionChain && !view.evolutionChain.linear
+            && view.evolutionChain.to.length > 1)
+
+          Repeater {
+            model: (view.evolutionPhase === "ready" && view.evolutionChain
+              && !view.evolutionChain.linear && view.evolutionChain.to.length > 1)
+              ? view.evolutionChain.to : []
+            delegate: EvolutionNode {
+              required property var modelData
+              name: modelData.name
+              label: modelData.label
+              spriteId: modelData.spriteId
+              condition: modelData.condition
+              clickable: true
+              showArrow: true
+              fg: view.fg
+              family: view.family
+              onActivated: view.evolutionJumpRequested(name, label)
+            }
           }
         }
       }

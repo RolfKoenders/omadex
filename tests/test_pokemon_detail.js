@@ -51,6 +51,7 @@ const chart = {
 section("Pikachu (single type, no hidden-ability surprises)", () => {
   const detail = PokemonDetail.projectDetail(fixture("pokemon-pikachu.json"), chart, TypeMatchups);
   eq("dexNumberPadded", detail.dexNumberPadded, "#025");
+  eq("speciesName", detail.speciesName, "pikachu");
   eq("height decimetres -> metres", detail.heightM, 0.4);
   eq("weight hectograms -> kilograms", detail.weightKg, 6);
   eq("types", detail.types, ["electric"]);
@@ -66,6 +67,7 @@ section("Pikachu (single type, no hidden-ability surprises)", () => {
 section("Charizard (dual type, weaknesses delegated to TypeMatchups via injection)", () => {
   const detail = PokemonDetail.projectDetail(fixture("pokemon-charizard.json"), chart, TypeMatchups);
   eq("dexNumberPadded", detail.dexNumberPadded, "#006");
+  eq("speciesName", detail.speciesName, "charizard");
   eq("types in slot order", detail.types, ["fire", "flying"]);
   eq("weaknesses match calling TypeMatchups directly on the same types",
      detail.weaknesses, TypeMatchups.weaknesses(["fire", "flying"], chart));
@@ -76,6 +78,7 @@ section("Charizard (dual type, weaknesses delegated to TypeMatchups via injectio
 section("Golurk (multiple non-hidden abilities plus one hidden)", () => {
   const detail = PokemonDetail.projectDetail(fixture("pokemon-golurk.json"), chart, TypeMatchups);
   eq("dexNumberPadded", detail.dexNumberPadded, "#623");
+  eq("speciesName", detail.speciesName, "golurk");
   eq("height decimetres -> metres", detail.heightM, 2.8);
   eq("weight hectograms -> kilograms", detail.weightKg, 330);
   eq("abilities", detail.abilities, [

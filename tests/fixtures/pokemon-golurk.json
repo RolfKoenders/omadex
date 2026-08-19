@@ -85,5 +85,9 @@
         "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/623.png"
       }
     }
+  },
+  "species": {
+    "name": "golurk",
+    "url": "https://pokeapi.co/api/v2/pokemon-species/1/"
   }
 }

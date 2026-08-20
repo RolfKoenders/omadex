@@ -114,18 +114,37 @@ Item {
             fillMode: Image.PreserveAspectFit
             asynchronous: true
 
-            readonly property string localSource: view.dex && view.dex.artworkPath
-              ? ("file://" + view.dex.artworkPath) : ""
+            readonly property bool shiny: view.dex ? view.dex.isShiny : false
+            readonly property string localPath: shiny
+              ? (view.dex ? view.dex.shinyArtworkPath : "")
+              : (view.dex ? view.dex.artworkPath : "")
+            readonly property string remoteUrl: view.detail
+              ? (shiny ? view.detail.shinySpriteUrl : view.detail.spriteUrl) : ""
+            readonly property string localSource: localPath ? ("file://" + localPath) : ""
             // Falls back to the remote URL if the local file doesn't exist
-            // yet (first-ever lookup). A live binding, not a one-shot check,
-            // since detail usually only arrives after the local load fails.
+            // yet (first-ever lookup, or a shiny roll that hasn't finished
+            // downloading). A live binding, not a one-shot check, since
+            // detail usually only arrives after the local load fails.
             property bool localFailed: false
-            source: localFailed ? (view.detail ? view.detail.spriteUrl : "") : localSource
+            source: localFailed ? remoteUrl : localSource
             // source reads back as a QUrl, not the plain string it was
             // assigned, so this must coerce both sides to String to compare.
             onStatusChanged: {
               if (status === Image.Error && String(source) === localSource) localFailed = true
             }
+          }
+
+          // Quiet marker, not a banner: shiny colors are sometimes close
+          // enough to normal that the swap alone can go unnoticed.
+          Text {
+            textFormat: Text.PlainText
+            visible: view.dex && view.dex.isShiny
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: Style.spacing.xxs
+            text: "✨"
+            font.family: view.family
+            font.pixelSize: Style.font.body
           }
         }
 

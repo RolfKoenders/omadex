@@ -71,7 +71,7 @@ section("isValidIndexShape", () => {
 section("isValidDetailShape", () => {
   const valid = {
     id: 25, label: "Pikachu", speciesName: "pikachu", dexNumberPadded: "#025",
-    spriteUrl: "https://example/x.png",
+    spriteUrl: "https://example/x.png", shinySpriteUrl: "https://example/x-shiny.png",
     heightM: 0.4, weightKg: 6, types: ["electric"],
     abilities: [{ label: "Static", hidden: false }],
     stats: [{ key: "hp", label: "HP", value: 35 }],
@@ -80,6 +80,10 @@ section("isValidDetailShape", () => {
   eq("well-formed detail accepted", CacheValidation.isValidDetailShape(valid), true);
   eq("missing speciesName rejected",
      CacheValidation.isValidDetailShape(Object.assign({}, valid, { speciesName: undefined })), false);
+  eq("missing shinySpriteUrl rejected (old pre-shiny cache shape)",
+     CacheValidation.isValidDetailShape(Object.assign({}, valid, { shinySpriteUrl: undefined })), false);
+  eq("empty-string shinySpriteUrl accepted (no shiny art available for this Pokemon)",
+     CacheValidation.isValidDetailShape(Object.assign({}, valid, { shinySpriteUrl: "" })), true);
   eq("empty types array rejected (every Pokemon has at least one type)",
      CacheValidation.isValidDetailShape(Object.assign({}, valid, { types: [] })), false);
   eq("wrong type for heightM rejected",

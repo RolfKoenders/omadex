@@ -8,6 +8,7 @@ import "CacheValidation.js" as CacheValidation
 import "PokeApi.js" as PokeApi
 import "Recents.js" as Recents
 import "Evolution.js" as Evolution
+import "Shiny.js" as Shiny
 
 // Owner of the search index, type chart, and per-Pokemon detail: cache,
 // fetch, and derived state. Panel.qml owns keyboard/UI concerns only.
@@ -72,10 +73,16 @@ QtObject {
 
   readonly property string artworkPath: root.expandedSlug
     ? (root.cacheDir + "/pokemon/" + root.expandedSlug + ".png") : ""
+  readonly property string shinyArtworkPath: root.expandedSlug
+    ? (root.cacheDir + "/pokemon/" + root.expandedSlug + "-shiny.png") : ""
 
   // idle | loading | error | ready
   property string evolutionPhase: "idle"
   property var evolutionChain: null
+
+  // Rolled fresh on every selection, not persisted — a surprise on this
+  // particular viewing, not a fact about the Pokemon. See Shiny.js.
+  property bool isShiny: false
 
   function selectPokemon(slug) {
     if (root.expandedSlug === slug) { root.collapse(); return }
@@ -85,6 +92,7 @@ QtObject {
     root.detailPhase = "loading"
     root.evolutionPhase = "loading"
     root.evolutionChain = null
+    root.isShiny = Shiny.rollShiny(Math.random())
     root.detailCacheFile.path = root.cacheDir + "/pokemon/" + slug + ".json"
     root.detailCacheFile.reload()
   }
@@ -96,6 +104,7 @@ QtObject {
     root.detail = null
     root.evolutionPhase = "idle"
     root.evolutionChain = null
+    root.isShiny = false
   }
 
   // ------------------------------------------------------------ index cache
@@ -246,7 +255,10 @@ QtObject {
     root.detailPhase = "ready"
     root.markViewed(slug)
     root.fetchEvolution(slug, parsed.speciesName)
-    // Loaded from disk: artwork was already attempted on the original fetch.
+    // Loaded from disk: normal artwork was already attempted on the
+    // original fetch, but shiny is rolled per viewing, so it can hit on a
+    // cache hit just as easily as on a fresh fetch.
+    if (root.isShiny) root.downloadShinyArtwork(slug, parsed.shinySpriteUrl)
   }
 
   function onDetailFileMissing(path) {
@@ -269,6 +281,7 @@ QtObject {
         root.fetchEvolution(slug, projected.speciesName)
         root.writeDetailCache(slug, projected)
         root.downloadArtwork(slug, projected.spriteUrl)
+        if (root.isShiny) root.downloadShinyArtwork(slug, projected.shinySpriteUrl)
       })
     }, function(message) {
       if (slug !== root.pendingSlug) return
@@ -366,6 +379,19 @@ QtObject {
     var path = root.cacheDir + "/pokemon/" + slug + ".png"
     root.artworkProcess.command = ["curl", "-sf", "--create-dirs", "-o", path, url]
     root.artworkProcess.running = true
+  }
+
+  // Unlike downloadArtwork, this can run on every lookup, not just a
+  // Pokemon's first fetch, since the shiny roll is per viewing. No
+  // existence check first: overwriting an already-cached copy of the same
+  // small PNG is harmless.
+  property Process shinyArtworkProcess: Process {}
+
+  function downloadShinyArtwork(slug, url) {
+    if (!url || root.shinyArtworkProcess.running) return
+    var path = root.cacheDir + "/pokemon/" + slug + "-shiny.png"
+    root.shinyArtworkProcess.command = ["curl", "-sf", "--create-dirs", "-o", path, url]
+    root.shinyArtworkProcess.running = true
   }
 
   // ------------------------------------------------------------ startup

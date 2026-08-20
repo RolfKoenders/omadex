@@ -55,6 +55,9 @@ section("Pikachu (single type, no hidden-ability surprises)", () => {
   eq("height decimetres -> metres", detail.heightM, 0.4);
   eq("weight hectograms -> kilograms", detail.weightKg, 6);
   eq("types", detail.types, ["electric"]);
+  eq("shinySpriteUrl extracted from official-artwork.front_shiny",
+     detail.shinySpriteUrl,
+     "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/25.png");
   eq("abilities with hidden flag",
      detail.abilities, [
        { label: "Static", hidden: false },
@@ -88,6 +91,8 @@ section("Golurk (multiple non-hidden abilities plus one hidden)", () => {
   ]);
   eq("immune to electric, fighting, and normal, proving the injected module actually ran",
      detail.weaknesses.immune, ["electric", "fighting", "normal"]);
+  eq("no front_shiny in this fixture: shinySpriteUrl falls back to empty",
+     detail.shinySpriteUrl, "");
 });
 
 console.log();

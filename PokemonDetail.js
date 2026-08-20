@@ -34,6 +34,13 @@ function spriteUrlFor(pokemon) {
   return official || sprites.front_default || ""
 }
 
+function shinySpriteUrlFor(pokemon) {
+  var sprites = pokemon.sprites || {}
+  var official = sprites.other && sprites.other["official-artwork"]
+    ? sprites.other["official-artwork"].front_shiny : null
+  return official || sprites.front_shiny || ""
+}
+
 function projectDetail(pokemon, typeChart, matchups) {
   var types = []
   var rawTypes = Array.isArray(pokemon.types) ? pokemon.types.slice() : []
@@ -64,6 +71,7 @@ function projectDetail(pokemon, typeChart, matchups) {
     speciesName: pokemon.species.name,
     dexNumberPadded: padNumber(pokemon.id),
     spriteUrl: spriteUrlFor(pokemon),
+    shinySpriteUrl: shinySpriteUrlFor(pokemon),
     heightM: pokemon.height / 10,
     weightKg: pokemon.weight / 10,
     types: types,

@@ -45,6 +45,7 @@ function isValidDetailShape(parsed) {
   if (typeof parsed.speciesName !== "string") return false
   if (typeof parsed.dexNumberPadded !== "string") return false
   if (typeof parsed.spriteUrl !== "string") return false
+  if (typeof parsed.shinySpriteUrl !== "string") return false
   if (typeof parsed.heightM !== "number") return false
   if (typeof parsed.weightKg !== "number") return false
   if (!isStringArray(parsed.types) || parsed.types.length === 0) return false

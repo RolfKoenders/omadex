@@ -29,6 +29,7 @@ With the panel open, type to search. Arrow keys move the highlighted result, or 
 - Evolution chain, with each stage a click or arrow-key away
 - Weaknesses and resistances, correctly combined for dual type Pokémon, grouped as Weak x4, Weak x2, Resists x0.5, Resists x0.25, and Immune
 - Recently-viewed Pokémon, reachable with Tab
+- A small chance any lookup shows a Pokémon's shiny sprite instead of its normal one — no way to trigger it on purpose
 
 Covers the full national dex, including forms that actually differ in type (Alolan Vulpix, Mega Charizard X, and so on) as their own searchable entries. Variants that are cosmetic only, or that share the same type as the form they're based on, are left out of search so results stay clean.
 
